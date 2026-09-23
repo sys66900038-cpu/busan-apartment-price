@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: busan-apartment-price
+    runtime: docker
+    plan: free
+    envVars:
+      - key: DATA_GO_KR_SERVICE_KEY
+        sync: false
+      - key: PORT
+        value: 3000
+    healthCheckPath: /api/health
