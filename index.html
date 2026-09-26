@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1769e0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>MY ASSET V6</title>
+<title>MY ASSET V7</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;color:#172033}
@@ -14,7 +14,19 @@ body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"N
 .logo{font-size:22px;font-weight:900}.logo span{color:#1769e0}.sub{font-size:12px;color:#7b8797;margin-top:3px}
 .wrap{padding:16px}.hidden{display:none!important}
 .hero{background:linear-gradient(135deg,#1769e0,#4a8df0);color:#fff;border-radius:22px;padding:22px;box-shadow:0 8px 24px rgba(23,105,224,.22)}
-.hero .label{font-size:12px;opacity:.82}.hero .total{font-size:31px;font-weight:900;margin:6px 0}.hero .change{font-size:13px}
+.hero .label{font-size:12px;opacity:.82}.hero .total{font-size:31px;font-weight:900;margin:6px 0}
+.hero .change{
+  display:inline-block;
+  margin-top:4px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:rgba(255,255,255,.15);
+  color:#fff;
+  font-size:13px;
+  font-weight:800;
+}
+.hero .change.pos{color:#d9ffe8}
+.hero .change.neg{color:#ffe1e1}
 .section{font-size:16px;font-weight:900;margin:22px 2px 10px}
 .card,.mini{background:#fff;border:1px solid #e5eaf0;border-radius:17px;box-shadow:0 3px 12px rgba(20,40,70,.04)}
 .card{padding:16px;margin-bottom:10px}.mini{padding:14px}
@@ -98,7 +110,8 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 <section id="invest" class="wrap hidden">
   <div class="section" style="margin-top:0">투자현황</div>
   <div class="card" id="investSummary"></div>
-  <div class="notice" style="margin:12px 0">종목은 직접 추가·수정·삭제할 수 있습니다. 변경 내용은 현재 브라우저에 저장됩니다.</div>
+  <div class="notice" style="margin:12px 0">종목을 추가·수정·삭제하면 해당 계좌의 <b>평가금액</b>이 자동으로 다시 계산되어 최신 월 자산현황에 반영됩니다. 투자원금은 월간기록의 값을 유지합니다.</div>
+  <div id="syncMsg"></div>
   <div id="holdingAccounts"></div>
 </section>
 
@@ -316,6 +329,29 @@ function renderAssets(){
  }).join("");
 }
 
+
+function holdingValueTotal(account){
+ return (holdings[account]||[]).reduce((sum,h)=>sum+Number(h.value||0),0);
+}
+
+function syncHoldingAccountToLatestMonth(account){
+ const k=latestKey();
+ if(!k || !data[k] || !data[k][account]) return;
+
+ const newValue=holdingValueTotal(account);
+ data[k][account].value=newValue;
+ localStorage.setItem(MONTH_KEY,JSON.stringify(data));
+
+ const msg=document.getElementById("syncMsg");
+ if(msg){
+   msg.innerHTML=`<div class="notice" style="margin-bottom:12px">${ACCOUNTS[account].name} 종목 합계 ${money(newValue)}가 ${data[k].label} 평가금액에 자동 반영되었습니다.</div>`;
+ }
+}
+
+function syncAllHoldingAccountsToLatestMonth(){
+ ["pension","isa","toss"].forEach(syncHoldingAccountToLatestMonth);
+}
+
 function renderInvest(){
  const m=data[latestKey()];
  const invOnly=["pension","isa","toss"];
@@ -332,8 +368,20 @@ function renderInvest(){
 function renderHoldingAccount(k){
  const a=ACCOUNTS[k],arr=holdings[k]||[];
  return `<div class="account-block">
- <div class="account-title"><b>${a.name}</b><button class="btn small" onclick="openHoldingModal('${k}',-1)">+ 종목 추가</button></div>
- <div class="card">${arr.length?arr.map((h,i)=>holdingRow(k,h,i)).join(""):'<div class="muted">등록된 종목이 없습니다.</div>'}</div>
+ <div class="account-title">
+   <b>${a.name}</b>
+   <div style="display:flex;gap:6px">
+     <button class="btn gray small" onclick="manualSync('${k}')">합계 반영</button>
+     <button class="btn small" onclick="openHoldingModal('${k}',-1)">+ 종목 추가</button>
+   </div>
+ </div>
+ <div class="card">
+   <div class="row" style="padding-bottom:10px;border-bottom:1px solid #edf0f4">
+     <span class="muted">종목 평가금액 합계</span>
+     <b>${money(holdingValueTotal(k))}</b>
+   </div>
+   ${arr.length?arr.map((h,i)=>holdingRow(k,h,i)).join(""):'<div class="muted" style="padding-top:12px">등록된 종목이 없습니다.</div>'}
+ </div>
  </div>`;
 }
 
@@ -344,6 +392,12 @@ function holdingRow(account,h,i){
  ${h.avg!=null?`<div class="muted" style="margin-top:4px">평균매수가 ${money(h.avg)} · 현재가 ${money(h.current)}</div>`:""}
  <div class="holding-actions"><button class="btn gray small" onclick="openHoldingModal('${account}',${i})">수정</button><button class="btn danger small" onclick="deleteHolding('${account}',${i})">삭제</button></div>
  </div>`;
+}
+
+
+function manualSync(account){
+ syncHoldingAccountToLatestMonth(account);
+ renderAll();
 }
 
 function openHoldingModal(account,index){
@@ -398,7 +452,12 @@ function saveHolding(originalAccount,index){
    holdings[newAccount].push(obj);
  }
  localStorage.setItem(HOLD_KEY,JSON.stringify(holdings));
- closeModal(); renderInvest();
+ syncHoldingAccountToLatestMonth(newAccount);
+ if(index>=0 && originalAccount!==newAccount){
+   syncHoldingAccountToLatestMonth(originalAccount);
+ }
+ closeModal();
+ renderAll();
 }
 
 function toNullableNumber(v){return v===""?null:Number(v)}
@@ -406,7 +465,8 @@ function deleteHolding(account,index){
  if(confirm("이 종목을 삭제할까요?")){
    holdings[account].splice(index,1);
    localStorage.setItem(HOLD_KEY,JSON.stringify(holdings));
-   renderInvest();
+   syncHoldingAccountToLatestMonth(account);
+   renderAll();
  }
 }
 
@@ -497,6 +557,12 @@ function saveNextMonth(){
  }
 
  data[currentInputKey]=obj;
+ localStorage.setItem(MONTH_KEY,JSON.stringify(data));
+
+ // 투자계좌 평가금액은 현재 등록된 종목 합계를 기준으로 자동 보정합니다.
+ ["pension","isa","toss"].forEach(account=>{
+   data[currentInputKey][account].value=holdingValueTotal(account);
+ });
  localStorage.setItem(MONTH_KEY,JSON.stringify(data));
 
  const savedLabel=labelFromKey(currentInputKey);
