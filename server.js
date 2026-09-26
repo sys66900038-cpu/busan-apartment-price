@@ -1,8 +1,12 @@
-const express = require("express");
-const path = require("path");
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.use(express.json());
 app.use(express.static(__dirname));
@@ -29,10 +33,8 @@ function monthKeyFromUnix(ts) {
 }
 
 async function fetchYahooDaily(symbol) {
-
   const now = Math.floor(Date.now() / 1000);
 
-  // 2025년 12월부터 데이터 요청
   const start = Math.floor(
     Date.UTC(2025, 11, 1) / 1000
   );
@@ -79,7 +81,6 @@ async function fetchYahooDaily(symbol) {
   const monthly = {};
 
   for (let i = 0; i < timestamps.length; i++) {
-
     const close = closes[i];
 
     if (
@@ -92,75 +93,40 @@ async function fetchYahooDaily(symbol) {
     const key =
       monthKeyFromUnix(timestamps[i]);
 
-    /*
-      같은 달 데이터가 계속 덮어써지므로
-      최종적으로 해당 월의 마지막 거래일 종가가 남음
-    */
     monthly[key] = Number(close);
   }
 
   return monthly;
 }
 
-
-/*
-================================
-시장지수 API
-================================
-*/
-
 app.get(
   "/api/market-history",
   async (req, res) => {
-
     try {
-
-      /*
-      6시간 캐시
-      */
-
       if (
         marketCache.payload &&
         Date.now() < marketCache.expiresAt
       ) {
-
         return res.json(
           marketCache.payload
         );
       }
-
-
-      /*
-      S&P500
-      Nasdaq100
-      KOSPI
-      동시에 요청
-      */
 
       const [
         sp500,
         nasdaq100,
         kospi
       ] = await Promise.all([
-
         fetchYahooDaily(
           SYMBOLS.sp500
         ),
-
         fetchYahooDaily(
           SYMBOLS.nasdaq100
         ),
-
         fetchYahooDaily(
           SYMBOLS.kospi
         )
-
       ]);
-
-
-      /*
-      월 목록 만들기
-      */
 
       const allKeys = [
         ...new Set([
@@ -170,12 +136,9 @@ app.get(
         ])
       ].sort();
 
-
       const months = {};
 
-
       for (const key of allKeys) {
-
         if (
           !key.startsWith("2026-")
         ) {
@@ -183,7 +146,6 @@ app.get(
         }
 
         months[key] = {
-
           sp500:
             sp500[key] ?? null,
 
@@ -192,14 +154,10 @@ app.get(
 
           kospi:
             kospi[key] ?? null
-
         };
-
       }
 
-
       const payload = {
-
         source:
           "Yahoo Finance chart data",
 
@@ -207,66 +165,44 @@ app.get(
           new Date().toISOString(),
 
         months
-
       };
 
-
-      /*
-      캐시 저장
-      */
-
       marketCache = {
-
         expiresAt:
           Date.now() +
           6 * 60 * 60 * 1000,
 
         payload
-
       };
 
-
       res.json(payload);
-
     }
 
     catch (error) {
-
       console.error(
         "market-history error:",
         error
       );
 
       res.status(502).json({
-
         error:
           "시장지수 데이터를 불러오지 못했습니다."
-
       });
-
     }
-
   }
 );
 
-
-/*
-================================
-메인 페이지
-================================
-*/
-
 app.use((req, res) => {
   res.sendFile(
-    path.join(__dirname, "index.html")
+    path.join(
+      __dirname,
+      "index.html"
+    )
   );
 });
 
-
 app.listen(PORT, () => {
-
   console.log(
     `MY ASSET server running on port ${PORT}`
   );
-
 });
