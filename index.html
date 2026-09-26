@@ -199,7 +199,7 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
   </div>
 
   <div class="notice">
-    기본값은 기존 가계부 데이터를 사용하고, 서버 연결이 정상일 때는 S&amp;P500·나스닥100·코스피를 자동으로 갱신합니다.
+    서버가 정상 연결되면 S&amp;P500·나스닥100·코스피를 자동으로 갱신합니다. 서버 연결이 실패하면 기존 저장값을 사용합니다.
   </div>
 </section>
 
@@ -262,13 +262,13 @@ let MARKET_DATA={
 };
 
 const MARKET_STORE_KEY="my_asset_v11_market";
-const MARKET_STORE_META_KEY="my_asset_v11_market_meta";
+const MARKET_META_KEY="my_asset_v11_market_meta";
 
 try{
- const savedMarket=JSON.parse(localStorage.getItem(MARKET_STORE_KEY)||"null");
- if(savedMarket && typeof savedMarket==="object"){
-   MARKET_DATA={...MARKET_DATA,...savedMarket};
- }
+  const saved=JSON.parse(localStorage.getItem(MARKET_STORE_KEY)||"null");
+  if(saved && typeof saved==="object"){
+    MARKET_DATA={...MARKET_DATA,...saved};
+  }
 }catch(e){}
 
 
@@ -682,39 +682,52 @@ function deleteHolding(account,index){
 
 
 async function refreshMarketData(manual=false){
- const status=document.getElementById("marketStatus");
- if(status) status.textContent="시장지수를 불러오는 중...";
+  const status=document.getElementById("marketStatus");
+  if(status) status.textContent="시장지수를 불러오는 중...";
 
- try{
-   const res=await fetch("/api/market-history",{cache:"no-store"});
-   if(!res.ok) throw new Error("서버 응답 오류");
-   const payload=await res.json();
+  try{
+    const res=await fetch("/api/market-history",{cache:"no-store"});
+    if(!res.ok) throw new Error("서버 응답 오류");
 
-   if(!payload || !payload.months) throw new Error("지수 데이터 형식 오류");
+    const payload=await res.json();
+    if(!payload?.months) throw new Error("데이터 형식 오류");
 
-   MARKET_DATA={...MARKET_DATA,...payload.months};
-   localStorage.setItem(MARKET_STORE_KEY,JSON.stringify(MARKET_DATA));
+    MARKET_DATA={...MARKET_DATA,...payload.months};
 
-   const meta={
-     updatedAt:payload.updatedAt||new Date().toISOString(),
-     source:payload.source||"market API"
-   };
-   localStorage.setItem(MARKET_STORE_META_KEY,JSON.stringify(meta));
+    localStorage.setItem(
+      MARKET_STORE_KEY,
+      JSON.stringify(MARKET_DATA)
+    );
 
-   if(status){
-     status.textContent=`자동 업데이트 완료 · ${new Date(meta.updatedAt).toLocaleString("ko-KR")} · ${meta.source}`;
-   }
+    const meta={
+      updatedAt:payload.updatedAt||new Date().toISOString(),
+      source:payload.source||"시장지수 API"
+    };
 
-   renderMarket();
- }catch(e){
-   const meta=JSON.parse(localStorage.getItem(MARKET_STORE_META_KEY)||"null");
-   if(status){
-     status.textContent=meta
-       ? `자동 업데이트 실패 · 마지막 저장 데이터 ${new Date(meta.updatedAt).toLocaleString("ko-KR")} 사용`
-       : "자동 업데이트 실패 · 앱에 저장된 기본 지수 데이터를 사용합니다.";
-   }
-   if(manual) alert("시장지수 자동 업데이트에 실패했습니다. 기존 저장값을 사용합니다.");
- }
+    localStorage.setItem(
+      MARKET_META_KEY,
+      JSON.stringify(meta)
+    );
+
+    if(status){
+      status.textContent=
+        `자동 업데이트 완료 · ${new Date(meta.updatedAt).toLocaleString("ko-KR")} · ${meta.source}`;
+    }
+
+    renderMarket();
+  }catch(err){
+    const meta=JSON.parse(localStorage.getItem(MARKET_META_KEY)||"null");
+
+    if(status){
+      status.textContent=meta
+        ? `자동 업데이트 실패 · 마지막 저장 데이터 ${new Date(meta.updatedAt).toLocaleString("ko-KR")} 사용`
+        : "자동 업데이트 실패 · 앱 기본 데이터를 사용합니다.";
+    }
+
+    if(manual){
+      alert("시장지수 자동 업데이트에 실패했습니다. 기존 저장값을 사용합니다.");
+    }
+  }
 }
 
 function marketReturn(indexKey,k){
