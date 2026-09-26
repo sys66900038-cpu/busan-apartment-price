@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1769e0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>MY ASSET V9</title>
+<title>MY ASSET V10</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;color:#172033}
@@ -42,6 +42,18 @@ body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"N
 .kpi{background:#fff;border:1px solid #e5eaf0;border-radius:16px;padding:14px}
 .kpi .k{font-size:11px;color:#7b8797}.kpi .v{font-size:18px;font-weight:900;margin-top:5px}
 .kpi .s{font-size:10px;color:#8a95a5;margin-top:4px;line-height:1.4}
+.market-top{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.market-card{background:#fff;border:1px solid #e5eaf0;border-radius:16px;padding:14px}
+.market-card .k{font-size:11px;color:#7b8797}.market-card .v{font-size:18px;font-weight:900;margin-top:5px}
+.market-legend{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:10px}
+.market-legend span{display:flex;align-items:center;gap:5px;font-size:11px;color:#566274}
+.market-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.market-dot.mine{background:#172033}.market-dot.sp{background:#1769e0}.market-dot.ndx{background:#8b5cf6}.market-dot.kospi{background:#12a594}
+.market-chart{width:100%;height:230px;display:block}
+.market-table{width:100%;border-collapse:collapse;font-size:12px}
+.market-table th,.market-table td{padding:9px 4px;border-bottom:1px solid #edf0f4;text-align:right}
+.market-table th:first-child,.market-table td:first-child{text-align:left}
+
 .bar{height:8px;background:#edf1f5;border-radius:20px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;border-radius:20px}
 .btn{width:100%;border:0;border-radius:13px;padding:14px;background:#1769e0;color:#fff;font-weight:900;font-size:15px;margin-top:8px;cursor:pointer}
 .btn.gray{background:#edf2f7;color:#334155}.btn.small{width:auto;padding:7px 10px;font-size:12px;margin:0}
@@ -146,6 +158,47 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
   <div id="holdingAccounts"></div>
 </section>
 
+
+<section id="market" class="wrap hidden">
+  <div class="section" style="margin-top:0">시장지수 비교</div>
+
+  <div class="notice">
+    내 투자성과와 S&amp;P500, 나스닥100, 코스피의 연초 대비 흐름을 비교합니다.
+    내 투자성과는 현재 앱의 투자원금 대비 평가손익률을 사용하므로 적립식 투자에서는 시장지수 수익률과 완전히 같은 방식의 수익률은 아닙니다.
+  </div>
+
+  <div class="section">현재 비교</div>
+  <div class="market-top">
+    <div class="market-card"><div class="k">내 투자손익률</div><div class="v" id="marketMine">-</div></div>
+    <div class="market-card"><div class="k">S&amp;P500</div><div class="v" id="marketSP">-</div></div>
+    <div class="market-card"><div class="k">나스닥100</div><div class="v" id="marketNDX">-</div></div>
+    <div class="market-card"><div class="k">코스피</div><div class="v" id="marketKospi">-</div></div>
+  </div>
+
+  <div class="section">연초 대비 수익률 추이</div>
+  <div class="card">
+    <svg id="marketChart" class="market-chart" viewBox="0 0 420 230" preserveAspectRatio="none"></svg>
+    <div class="market-legend">
+      <span><i class="market-dot mine"></i>내 투자손익률</span>
+      <span><i class="market-dot sp"></i>S&amp;P500</span>
+      <span><i class="market-dot ndx"></i>나스닥100</span>
+      <span><i class="market-dot kospi"></i>코스피</span>
+    </div>
+  </div>
+
+  <div class="section">월별 비교</div>
+  <div class="card" style="overflow:auto">
+    <table class="market-table">
+      <thead><tr><th>월</th><th>내 투자</th><th>S&amp;P500</th><th>나스닥100</th><th>코스피</th></tr></thead>
+      <tbody id="marketTableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="notice">
+    현재 시장지수 값은 기존 가계부의 2026년 데이터 기준입니다. 다음 단계에서 자동 업데이트 API를 연결할 수 있습니다.
+  </div>
+</section>
+
 <section id="monthly" class="wrap hidden">
   <div class="section" style="margin-top:0">월간기록</div>
   <div class="notice">매달 한 번 각 계좌의 투자금액과 평가금액을 입력하면 총자산, 손익, 전월 대비 변화가 자동 계산됩니다.</div>
@@ -168,9 +221,10 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 
 <nav class="nav">
   <button id="navHome" class="on" onclick="go('home')"><b>⌂</b>홈</button>
-  <button id="navAssets" onclick="go('assets')"><b>▣</b>자산현황</button>
-  <button id="navInvest" onclick="go('invest')"><b>↗</b>투자현황</button>
-  <button id="navMonthly" onclick="go('monthly')"><b>▤</b>월간기록</button>
+  <button id="navAssets" onclick="go('assets')"><b>▣</b>자산</button>
+  <button id="navInvest" onclick="go('invest')"><b>↗</b>투자</button>
+  <button id="navMarket" onclick="go('market')"><b>≈</b>시장비교</button>
+  <button id="navMonthly" onclick="go('monthly')"><b>▤</b>월간</button>
 </nav>
 </div>
 
@@ -185,6 +239,24 @@ const BASE = {
 "2026-07":{label:"2026년 7월",pension:{invest:12632438,value:14553961},isa:{invest:27881257,value:23317000},toss:{invest:30648098.2,value:28967248},savings:{invest:11200000,value:11200000}},
 "2026-08":{label:"2026년 8월",pension:{invest:13132438,value:15098891},isa:{invest:28381257,value:24413816},toss:{invest:31148098.2,value:30710604},savings:{invest:11900000,value:11900000}}
 };
+
+const MARKET_BASE={
+ sp500:6878.11,
+ nasdaq100:25524.267,
+ kospi:4224.53
+};
+
+const MARKET_DATA={
+ "2026-01":{sp500:6939.03,nasdaq100:25552.387,kospi:5224.36},
+ "2026-02":{sp500:6878.88,nasdaq100:24960.035,kospi:6244.13},
+ "2026-03":{sp500:6368.85,nasdaq100:23132.771,kospi:5277.30},
+ "2026-04":{sp500:7135.95,nasdaq100:27186.985,kospi:6598.87},
+ "2026-05":{sp500:7580.06,nasdaq100:30333.18,kospi:8476.15},
+ "2026-06":{sp500:7440.43,nasdaq100:29774.751,kospi:8476.47},
+ "2026-07":{sp500:7489.72,nasdaq100:28274.195,kospi:6595.45},
+ "2026-08":{sp500:7711.76,nasdaq100:29433.428,kospi:6788.88}
+};
+
 
 const ACCOUNTS = {
  pension:{name:"연금저축",color:"#1769e0"},
@@ -287,6 +359,7 @@ function go(id){
  if(id==="home")navHome.classList.add("on");
  if(id==="assets")navAssets.classList.add("on");
  if(id==="invest")navInvest.classList.add("on");
+ if(id==="market")navMarket.classList.add("on");
  if(id==="monthly")navMonthly.classList.add("on");
  renderAll(); scrollTo(0,0);
 }
@@ -591,6 +664,106 @@ function deleteHolding(account,index){
  }
 }
 
+
+function marketReturn(indexKey,k){
+ const row=MARKET_DATA[k];
+ if(!row) return null;
+ const base=MARKET_BASE[indexKey];
+ return base ? (Number(row[indexKey])/base)-1 : null;
+}
+
+function portfolioSimpleReturn(k){
+ const m=data[k];
+ if(!m) return null;
+ const p=investmentPrincipal(m);
+ const v=investmentValue(m);
+ return p ? (v-p)/p : null;
+}
+
+function fmtPercent(n){
+ return n==null?"-":`${n>=0?"+":""}${(n*100).toFixed(2)}%`;
+}
+
+function renderMarket(){
+ const commonKeys=validKeys().filter(k=>MARKET_DATA[k]);
+ if(!commonKeys.length){
+   marketMine.textContent=marketSP.textContent=marketNDX.textContent=marketKospi.textContent="-";
+   marketChart.innerHTML="";
+   marketTableBody.innerHTML='<tr><td colspan="5">비교 가능한 데이터가 없습니다.</td></tr>';
+   return;
+ }
+
+ const latest=commonKeys.at(-1);
+ const mine=portfolioSimpleReturn(latest);
+ const sp=marketReturn("sp500",latest);
+ const ndx=marketReturn("nasdaq100",latest);
+ const kospi=marketReturn("kospi",latest);
+
+ const applyMetric=(el,v)=>{
+   el.textContent=fmtPercent(v);
+   el.className="v "+(v==null||v>=0?"pos":"neg");
+ };
+ applyMetric(marketMine,mine);
+ applyMetric(marketSP,sp);
+ applyMetric(marketNDX,ndx);
+ applyMetric(marketKospi,kospi);
+
+ const series=[
+   {key:"mine",label:"내 투자손익률",color:"#172033",values:commonKeys.map(portfolioSimpleReturn)},
+   {key:"sp",label:"S&P500",color:"#1769e0",values:commonKeys.map(k=>marketReturn("sp500",k))},
+   {key:"ndx",label:"나스닥100",color:"#8b5cf6",values:commonKeys.map(k=>marketReturn("nasdaq100",k))},
+   {key:"kospi",label:"코스피",color:"#12a594",values:commonKeys.map(k=>marketReturn("kospi",k))}
+ ];
+
+ const W=420,H=230,L=48,R=10,T=12,B=30,plotW=W-L-R,plotH=H-T-B;
+ const all=series.flatMap(s=>s.values.filter(v=>v!=null));
+ let minY=Math.min(...all,0), maxY=Math.max(...all,0);
+ const pad=Math.max((maxY-minY)*0.12,0.03);
+ minY-=pad; maxY+=pad;
+ const x=i=>L+(commonKeys.length===1?plotW/2:i*plotW/(commonKeys.length-1));
+ const y=v=>T+(maxY-v)/(maxY-minY)*plotH;
+
+ let out="";
+ for(let g=0;g<=4;g++){
+   const value=maxY-(maxY-minY)*(g/4);
+   const yy=T+plotH*g/4;
+   out+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e8edf3" stroke-width="1"/>`;
+   out+=`<text x="${L-5}" y="${yy+3}" text-anchor="end" font-size="9" fill="#8a95a5">${(value*100).toFixed(0)}%</text>`;
+ }
+ if(minY<0 && maxY>0){
+   const zy=y(0);
+   out+=`<line x1="${L}" y1="${zy}" x2="${W-R}" y2="${zy}" stroke="#aeb7c2" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+ }
+
+ for(const s of series){
+   const pts=s.values.map((v,i)=>v==null?null:`${x(i)},${y(v)}`).filter(Boolean).join(" ");
+   out+=`<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${s.key==="mine"?3:2}" stroke-linecap="round" stroke-linejoin="round"/>`;
+   s.values.forEach((v,i)=>{
+     if(v==null)return;
+     out+=`<circle cx="${x(i)}" cy="${y(v)}" r="${s.key==="mine"?3.2:2.5}" fill="${s.color}">
+       <title>${s.label} · ${commonKeys[i]} · ${fmtPercent(v)}</title>
+     </circle>`;
+   });
+ }
+ commonKeys.forEach((k,i)=>{
+   out+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#7b8797">${Number(k.slice(5))}월</text>`;
+ });
+ marketChart.innerHTML=out;
+
+ marketTableBody.innerHTML=commonKeys.slice().reverse().map(k=>{
+   const vals=[
+     portfolioSimpleReturn(k),
+     marketReturn("sp500",k),
+     marketReturn("nasdaq100",k),
+     marketReturn("kospi",k)
+   ];
+   return `<tr>
+     <td>${Number(k.slice(5))}월</td>
+     ${vals.map(v=>`<td class="${v==null?"":v>=0?"pos":"neg"}">${fmtPercent(v)}</td>`).join("")}
+   </tr>`;
+ }).join("");
+}
+
 function monthAfter(k){
  const [y,m]=k.split("-").map(Number);
  const d=new Date(y,m,1);
@@ -715,7 +888,7 @@ function deleteLatestMonth(){
  }
 }
 
-function renderAll(){renderHome();renderAssets();renderInvest();renderMonthly()}
+function renderAll(){renderHome();renderAssets();renderInvest();renderMarket();renderMonthly()}
 renderAll();
 </script>
 </body>
