@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1769e0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>MY ASSET V5</title>
+<title>MY ASSET V6</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;color:#172033}
@@ -27,7 +27,7 @@ body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"N
 .btn.danger{background:#fff0f0;color:#d33;border:1px solid #ffd5d5}
 input,select{width:100%;padding:13px;border:1px solid #dce3eb;border-radius:12px;font-size:15px;background:#fff}
 label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
-.notice{background:#edf6ff;border:1px solid #d6eaff;color:#315477;border-radius:14px;padding:12px;font-size:12px;line-height:1.5}
+.notice{background:#edf6ff;border:1px solid #d6eaff;color:#315477;border-radius:14px;padding:12px;font-size:12px;line-height:1.5}.warn{background:#fff6e8;border:1px solid #ffe0a8;color:#8a5a00;border-radius:14px;padding:12px;font-size:12px;line-height:1.5;margin-top:10px}
 .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(460px,100%);height:72px;background:#fff;border-top:1px solid #e3e8ee;display:flex;justify-content:space-around;align-items:center;z-index:20}
 .nav button{border:0;background:none;color:#8a95a5;font-size:10px;cursor:pointer}.nav button b{display:block;font-size:20px;margin-bottom:3px}.nav button.on{color:#1769e0}
 
@@ -109,6 +109,7 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
   <div id="monthlyForm"></div>
   <button class="btn" id="updateButton" onclick="saveNextMonth()">저장하기</button>
   <button class="btn gray" onclick="clearNextMonthForm()">입력값 지우기</button>
+  <button class="btn danger" onclick="deleteLatestMonth()">최근 월 기록 삭제</button>
   <div id="saveMsg"></div>
   <div class="section">월별 기록</div>
   <div class="card" id="history"></div>
@@ -196,8 +197,16 @@ function pctFromHolding(h){
 }
 function pct(n){return n==null?"-":(Number(n)*100).toFixed(2)+"%"}
 function keys(){return Object.keys(data).sort()}
-function latestKey(){return keys().at(-1)}
-function prevKey(k){const a=keys(),i=a.indexOf(k);return i>0?a[i-1]:null}
+function isValidMonth(k){
+ const m=data[k];
+ if(!m) return false;
+ const t=total(m);
+ // 투자금이 있는데 평가금액 합계가 0이면 미완성 입력으로 간주
+ return !(invested(m)>0 && t===0);
+}
+function validKeys(){return keys().filter(isValidMonth)}
+function latestKey(){return validKeys().at(-1)}
+function prevKey(k){const a=validKeys(),i=a.indexOf(k);return i>0?a[i-1]:null}
 function total(m){return Object.keys(ACCOUNTS).reduce((s,k)=>s+Number(m?.[k]?.value||0),0)}
 function invested(m){return Object.keys(ACCOUNTS).reduce((s,k)=>s+Number(m?.[k]?.invest||0),0)}
 
@@ -236,7 +245,7 @@ function renderHome(){
 
 function renderTrendChart(){
  const svg=document.getElementById("trendChart");
- const ks=keys();
+ const ks=validKeys();
  const W=420,H=210,L=44,R=8,T=12,B=28;
  const plotW=W-L-R, plotH=H-T-B;
 
@@ -415,28 +424,41 @@ function labelFromKey(k){
 let currentInputKey=null;
 
 function renderMonthly(){
- currentInputKey=monthAfter(latestKey());
- const saved=data[currentInputKey] || {
+ const latest=latestKey();
+ currentInputKey=monthAfter(latest);
+
+ const previous=data[latest];
+ const saved=data[currentInputKey];
+
+ // 새 달은 전월 값을 기본값으로 넣어 둡니다.
+ // 매달 바뀐 금액만 수정하면 됩니다.
+ const formData=saved || {
    label:labelFromKey(currentInputKey),
-   pension:{invest:"",value:""},
-   isa:{invest:"",value:""},
-   toss:{invest:"",value:""},
-   savings:{invest:"",value:""}
+   pension:{invest:previous?.pension?.invest??"",value:previous?.pension?.value??""},
+   isa:{invest:previous?.isa?.invest??"",value:previous?.isa?.value??""},
+   toss:{invest:previous?.toss?.invest??"",value:previous?.toss?.value??""},
+   savings:{invest:previous?.savings?.invest??"",value:previous?.savings?.value??""}
  };
 
  updateTitle.textContent=`${labelFromKey(currentInputKey)} 업데이트`;
  updateButton.textContent=`${Number(currentInputKey.slice(5))}월 저장하기`;
 
- monthlyForm.innerHTML=Object.entries(ACCOUNTS).map(([k,a])=>`<div class="card"><b>${a.name}</b>
- <label>투자금액 / 납입금액</label><input id="${k}_invest" type="number" value="${saved[k]?.invest??""}">
- <label>평가금액</label><input id="${k}_value" type="number" value="${saved[k]?.value??""}"></div>`).join("");
+ monthlyForm.innerHTML=`
+ <div class="notice">전월 금액을 자동으로 불러왔습니다. 이번 달에 달라진 금액만 수정하세요.</div>
+ `+Object.entries(ACCOUNTS).map(([k,a])=>`<div class="card"><b>${a.name}</b>
+ <label>투자금액 / 납입금액</label><input id="${k}_invest" type="number" value="${formData[k]?.invest??""}">
+ <label>평가금액</label><input id="${k}_value" type="number" value="${formData[k]?.value??""}"></div>`).join("");
 
- history.innerHTML=keys().slice().reverse().map(k=>{
-   const m=data[k],pk=prevKey(k),d=pk?total(m)-total(data[pk]):null;
+ const allKeys=keys();
+ history.innerHTML=allKeys.slice().reverse().map(k=>{
+   const mm=data[k];
+   const valid=isValidMonth(k);
+   const previousValid=valid?prevKey(k):null;
+   const d=previousValid?total(mm)-total(data[previousValid]):null;
    return `<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f4">
-     <b>${m.label}</b>
+     <div><b>${mm.label}</b>${!valid?'<div class="neg muted">미완성 입력 · 대시보드 제외</div>':''}</div>
      <div style="text-align:right">
-       <div>${money(total(m))}</div>
+       <div>${money(total(mm))}</div>
        <div class="muted ${d==null?"":d>=0?"pos":"neg"}">
          ${d==null?"":`${d>=0?"+":""}${money(d)}`}
        </div>
@@ -447,17 +469,30 @@ function renderMonthly(){
 
 function saveNextMonth(){
  const obj={label:labelFromKey(currentInputKey)};
- let hasValue=false;
+ const missing=[];
 
  for(const k of Object.keys(ACCOUNTS)){
-   const invest=Number(document.getElementById(k+"_invest").value)||0;
-   const value=Number(document.getElementById(k+"_value").value)||0;
-   if(invest!==0 || value!==0) hasValue=true;
-   obj[k]={invest,value};
+   const investRaw=document.getElementById(k+"_invest").value.trim();
+   const valueRaw=document.getElementById(k+"_value").value.trim();
+
+   if(investRaw==="" || valueRaw===""){
+     missing.push(ACCOUNTS[k].name);
+   }
+
+   obj[k]={
+     invest:Number(investRaw)||0,
+     value:Number(valueRaw)||0
+   };
  }
 
- if(!hasValue){
-   alert("한 개 이상의 계좌 금액을 입력해주세요.");
+ if(missing.length){
+   alert("다음 계좌의 투자금액 또는 평가금액이 비어 있습니다:\\n"+missing.join(", "));
+   return;
+ }
+
+ const totalValue=total(obj);
+ if(totalValue<=0){
+   alert("평가금액 합계가 0원입니다. 저장하지 않았습니다.");
    return;
  }
 
@@ -465,7 +500,7 @@ function saveNextMonth(){
  localStorage.setItem(MONTH_KEY,JSON.stringify(data));
 
  const savedLabel=labelFromKey(currentInputKey);
- saveMsg.innerHTML=`<div class="notice" style="margin-top:12px">${savedLabel} 데이터가 저장되었습니다. 다음 입력 월로 자동 이동합니다.</div>`;
+ saveMsg.innerHTML=`<div class="notice" style="margin-top:12px">${savedLabel} 데이터가 저장되었습니다. 다음 달 입력 화면으로 자동 이동합니다.</div>`;
 
  renderAll();
 }
@@ -476,6 +511,21 @@ function clearNextMonthForm(){
    document.getElementById(k+"_value").value="";
  }
  saveMsg.innerHTML="";
+}
+
+function deleteLatestMonth(){
+ const all=keys();
+ const last=all.at(-1);
+ if(!last || last==="2026-08"){
+   alert("삭제할 추가 월 기록이 없습니다.");
+   return;
+ }
+ if(confirm(`${labelFromKey(last)} 기록을 삭제할까요?`)){
+   delete data[last];
+   localStorage.setItem(MONTH_KEY,JSON.stringify(data));
+   saveMsg.innerHTML='<div class="notice" style="margin-top:12px">최근 월 기록을 삭제했습니다.</div>';
+   renderAll();
+ }
 }
 
 function renderAll(){renderHome();renderAssets();renderInvest();renderMonthly()}
