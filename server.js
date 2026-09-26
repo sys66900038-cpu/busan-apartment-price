@@ -1,166 +1,277 @@
-import express from "express";
-import Database from "better-sqlite3";
-import path from "path";
-import { fileURLToPath } from "url";
+const express = require("express");
+const path = require("path");
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 3000;
-const KEY = process.env.DATA_GO_KR_SERVICE_KEY || "";
-const API = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev";
-
-const GU = {
-  "26110":"중구","26140":"서구","26170":"동구","26200":"영도구","26230":"부산진구",
-  "26260":"동래구","26290":"남구","26320":"북구","26350":"해운대구","26380":"사하구",
-  "26410":"금정구","26440":"강서구","26470":"연제구","26500":"수영구","26530":"사상구","26710":"기장군"
-};
+const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const db = new Database(path.join(__dirname, "data.db"));
-db.pragma("journal_mode = WAL");
-db.exec(`
-CREATE TABLE IF NOT EXISTS offers (
- id INTEGER PRIMARY KEY AUTOINCREMENT,
- gu_code TEXT NOT NULL,
- gu_name TEXT NOT NULL,
- apt_name TEXT NOT NULL,
- area REAL,
- price_manwon INTEGER NOT NULL,
- floor TEXT,
- memo TEXT,
- created_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS cache (
- gu_code TEXT NOT NULL,
- deal_ym TEXT NOT NULL,
- payload TEXT NOT NULL,
- updated_at TEXT NOT NULL,
- PRIMARY KEY(gu_code, deal_ym)
-);
-`);
+const SYMBOLS = {
+  sp500: "^GSPC",
+  nasdaq100: "^NDX",
+  kospi: "^KS11"
+};
 
-function currentYM() {
-  const d = new Date();
-  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}`;
-}
+let marketCache = {
+  expiresAt: 0,
+  payload: null
+};
 
-function text(item, tag) {
-  const x = item.getElementsByTagName(tag)[0];
-  return x?.textContent?.trim() || "";
-}
+function monthKeyFromUnix(ts) {
+  const d = new Date(ts * 1000);
 
-function parseXml(xml) {
-  const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(m => m[1]);
-  return items.map(item => {
-    const price = Number(textFrom(item,"거래금액").replace(/,/g,"").replace(/\s/g,""));
-    return {
-      apt_name: textFrom(item,"아파트"),
-      area: Number(textFrom(item,"전용면적")) || 0,
-      price_manwon: price || 0,
-      year: textFrom(item,"년"),
-      month: textFrom(item,"월"),
-      day: textFrom(item,"일"),
-      floor: textFrom(item,"층"),
-      dong: textFrom(item,"법정동"),
-      jibun: textFrom(item,"지번"),
-      build_year: textFrom(item,"건축년도")
-    };
-  }).filter(x => x.apt_name && x.price_manwon > 0);
-}
-function textFrom(s, tag) {
-  const re = new RegExp(`<${tag}>([\\\\s\\\\S]*?)<\\\\/${tag}>`);
-  const m = s.match(re);
-  return m ? m[1].replace(/<!\\[CDATA\\[|\\]\\]>/g,"").trim() : "";
-}
-
-async function getTrades(guCode, ym, force=false) {
-  if (!GU[guCode]) throw new Error("잘못된 부산 구·군 코드입니다.");
-  if (!KEY) throw new Error("서버에 DATA_GO_KR_SERVICE_KEY가 설정되지 않았습니다.");
-
-  if (!force) {
-    const row = db.prepare("SELECT payload FROM cache WHERE gu_code=? AND deal_ym=?").get(guCode, ym);
-    if (row) return JSON.parse(row.payload);
-  }
-
-  const url = new URL(API);
-  url.searchParams.set("serviceKey", KEY);
-  url.searchParams.set("LAWD_CD", guCode);
-  url.searchParams.set("DEAL_YMD", ym);
-  url.searchParams.set("pageNo", "1");
-  url.searchParams.set("numOfRows", "1000");
-
-  const r = await fetch(url);
-  const xml = await r.text();
-  if (!r.ok) throw new Error(`국토부 API HTTP ${r.status}`);
-  const code = (xml.match(/<resultCode>(.*?)<\/resultCode>/) || [,""])[1];
-  if (code && !["00","000"].includes(code)) {
-    const msg = (xml.match(/<resultMsg>(.*?)<\/resultMsg>/) || [,"API 오류"])[1];
-    throw new Error(`${code}: ${msg}`);
-  }
-  const rows = parseXml(xml);
-  db.prepare("INSERT OR REPLACE INTO cache VALUES(?,?,?,?)")
-    .run(guCode, ym, JSON.stringify(rows), new Date().toISOString());
-  return rows;
-}
-
-app.get("/api/health", (req,res)=>res.json({ok:true, service:"busan-apartment-price-v1.1"}));
-app.get("/api/gu", (req,res)=>res.json(Object.entries(GU).map(([code,name])=>({code,name}))));
-
-app.get("/api/trades", async (req,res)=>{
-  try {
-    const {gu_code, deal_ym=currentYM(), apt_name, area} = req.query;
-    let rows = await getTrades(gu_code, deal_ym);
-    if (apt_name) rows = rows.filter(x => x.apt_name === apt_name);
-    if (area) rows = rows.filter(x => Math.abs(x.area - Number(area)) < 0.6);
-    rows.sort((a,b)=>Number(b.day)-Number(a.day));
-    res.json({gu_name:GU[gu_code], deal_ym, count:rows.length, items:rows});
-  } catch(e) { res.status(502).json({error:e.message}); }
-});
-
-app.get("/api/complexes", async (req,res)=>{
-  try {
-    const {gu_code, deal_ym=currentYM(), q=""} = req.query;
-    const rows = await getTrades(gu_code, deal_ym);
-    const map = new Map();
-    for (const x of rows) {
-      if (q && !x.apt_name.toLowerCase().includes(q.toLowerCase())) continue;
-      map.set(x.apt_name, (map.get(x.apt_name)||0)+1);
-    }
-    res.json([...map.entries()].map(([apt_name,trade_count])=>({apt_name,trade_count}))
-      .sort((a,b)=>b.trade_count-a.trade_count));
-  } catch(e) { res.status(502).json({error:e.message}); }
-});
-
-app.post("/api/update", async (req,res)=>{
-  try {
-    const {gu_code} = req.body;
-    const ym = currentYM();
-    const rows = await getTrades(gu_code, ym, true);
-    res.json({ok:true, deal_ym:ym, count:rows.length, updated_at:new Date().toISOString()});
-  } catch(e) { res.status(502).json({error:e.message}); }
-});
-
-app.get("/api/offers", (req,res)=>{
-  const {gu_code, apt_name} = req.query;
-  let sql="SELECT * FROM offers WHERE 1=1", args=[];
-  if(gu_code){sql+=" AND gu_code=?";args.push(gu_code)}
-  if(apt_name){sql+=" AND apt_name=?";args.push(apt_name)}
-  sql+=" ORDER BY created_at DESC";
-  res.json(db.prepare(sql).all(...args));
-});
-
-app.post("/api/offers", (req,res)=>{
-  const {gu_code,apt_name,area,price_manwon,floor="",memo=""}=req.body;
-  if(!GU[gu_code] || !apt_name || !Number(price_manwon)) return res.status(400).json({error:"필수값이 없습니다."});
-  const info=db.prepare(`INSERT INTO offers
-    (gu_code,gu_name,apt_name,area,price_manwon,floor,memo,created_at)
-    VALUES(?,?,?,?,?,?,?,?)`).run(
-      gu_code,GU[gu_code],apt_name,area||null,Number(price_manwon),floor,memo,new Date().toISOString()
+  return (
+    d.getUTCFullYear() +
+    "-" +
+    String(d.getUTCMonth() + 1).padStart(2, "0")
   );
-  res.json({ok:true,id:info.lastInsertRowid});
+}
+
+async function fetchYahooDaily(symbol) {
+
+  const now = Math.floor(Date.now() / 1000);
+
+  // 2025년 12월부터 데이터 요청
+  const start = Math.floor(
+    Date.UTC(2025, 11, 1) / 1000
+  );
+
+  const url =
+    "https://query1.finance.yahoo.com/v8/finance/chart/" +
+    encodeURIComponent(symbol) +
+    "?period1=" + start +
+    "&period2=" + now +
+    "&interval=1d" +
+    "&events=history" +
+    "&includeAdjustedClose=true";
+
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Accept": "application/json"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Yahoo request failed: ${symbol} ${response.status}`
+    );
+  }
+
+  const json = await response.json();
+
+  const result =
+    json?.chart?.result?.[0];
+
+  if (!result) {
+    throw new Error(
+      `시장 데이터를 찾을 수 없습니다: ${symbol}`
+    );
+  }
+
+  const timestamps =
+    result.timestamp || [];
+
+  const closes =
+    result.indicators?.quote?.[0]?.close || [];
+
+  const monthly = {};
+
+  for (let i = 0; i < timestamps.length; i++) {
+
+    const close = closes[i];
+
+    if (
+      close == null ||
+      !Number.isFinite(Number(close))
+    ) {
+      continue;
+    }
+
+    const key =
+      monthKeyFromUnix(timestamps[i]);
+
+    /*
+      같은 달 데이터가 계속 덮어써지므로
+      최종적으로 해당 월의 마지막 거래일 종가가 남음
+    */
+    monthly[key] = Number(close);
+  }
+
+  return monthly;
+}
+
+
+/*
+================================
+시장지수 API
+================================
+*/
+
+app.get(
+  "/api/market-history",
+  async (req, res) => {
+
+    try {
+
+      /*
+      6시간 캐시
+      */
+
+      if (
+        marketCache.payload &&
+        Date.now() < marketCache.expiresAt
+      ) {
+
+        return res.json(
+          marketCache.payload
+        );
+      }
+
+
+      /*
+      S&P500
+      Nasdaq100
+      KOSPI
+      동시에 요청
+      */
+
+      const [
+        sp500,
+        nasdaq100,
+        kospi
+      ] = await Promise.all([
+
+        fetchYahooDaily(
+          SYMBOLS.sp500
+        ),
+
+        fetchYahooDaily(
+          SYMBOLS.nasdaq100
+        ),
+
+        fetchYahooDaily(
+          SYMBOLS.kospi
+        )
+
+      ]);
+
+
+      /*
+      월 목록 만들기
+      */
+
+      const allKeys = [
+        ...new Set([
+          ...Object.keys(sp500),
+          ...Object.keys(nasdaq100),
+          ...Object.keys(kospi)
+        ])
+      ].sort();
+
+
+      const months = {};
+
+
+      for (const key of allKeys) {
+
+        if (
+          !key.startsWith("2026-")
+        ) {
+          continue;
+        }
+
+        months[key] = {
+
+          sp500:
+            sp500[key] ?? null,
+
+          nasdaq100:
+            nasdaq100[key] ?? null,
+
+          kospi:
+            kospi[key] ?? null
+
+        };
+
+      }
+
+
+      const payload = {
+
+        source:
+          "Yahoo Finance chart data",
+
+        updatedAt:
+          new Date().toISOString(),
+
+        months
+
+      };
+
+
+      /*
+      캐시 저장
+      */
+
+      marketCache = {
+
+        expiresAt:
+          Date.now() +
+          6 * 60 * 60 * 1000,
+
+        payload
+
+      };
+
+
+      res.json(payload);
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "market-history error:",
+        error
+      );
+
+      res.status(502).json({
+
+        error:
+          "시장지수 데이터를 불러오지 못했습니다."
+
+      });
+
+    }
+
+  }
+);
+
+
+/*
+================================
+메인 페이지
+================================
+*/
+
+app.get("*", (req, res) => {
+
+  res.sendFile(
+    path.join(
+      __dirname,
+      "index.html"
+    )
+  );
+
 });
 
-app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"index.html")));
-app.listen(PORT,()=>console.log(`Busan Apartment V1.1 listening on ${PORT}`));
+
+app.listen(PORT, () => {
+
+  console.log(
+    `MY ASSET server running on port ${PORT}`
+  );
+
+});
