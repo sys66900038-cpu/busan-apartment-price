@@ -23,20 +23,20 @@ body{
   min-height:100vh;
   margin:auto;
   background:#f8fafc;
-  padding-bottom:80px;
+  padding-bottom:82px;
 }
 
 .header{
+  background:#fff;
+  padding:20px 18px 16px;
+  border-bottom:1px solid #e7ebf0;
   position:sticky;
   top:0;
   z-index:10;
-  background:#fff;
-  padding:18px 18px 15px;
-  border-bottom:1px solid #e9edf2;
 }
 
 .logo{
-  font-size:21px;
+  font-size:22px;
   font-weight:900;
 }
 
@@ -48,46 +48,30 @@ body{
   padding:16px;
 }
 
-.hidden{
-  display:none!important;
-}
-
 .card{
   background:#fff;
   border:1px solid #e5eaf0;
   border-radius:18px;
   padding:16px;
-  margin:10px 0;
-  box-shadow:0 3px 12px rgba(20,40,70,.05);
+  margin-bottom:12px;
+  box-shadow:0 3px 12px rgba(20,40,70,.04);
 }
 
-.hero{
-  background:linear-gradient(135deg,#1769e0,#4389ed);
+.total-card{
+  background:linear-gradient(135deg,#1769e0,#4a8df0);
   color:#fff;
-  border-radius:22px;
-  padding:22px;
-  box-shadow:0 8px 25px rgba(23,105,224,.22);
+  border:0;
 }
 
-.hero .small{
-  opacity:.85;
+.label{
   font-size:12px;
+  opacity:.8;
 }
 
-.hero .total{
-  font-size:30px;
+.total{
+  font-size:31px;
   font-weight:900;
-  margin:7px 0;
-}
-
-.hero .change{
-  font-size:13px;
-}
-
-.section{
-  font-size:16px;
-  font-weight:900;
-  margin:23px 2px 10px;
+  margin:7px 0 15px;
 }
 
 .row{
@@ -97,106 +81,92 @@ body{
   gap:10px;
 }
 
-.muted{
-  color:#78869a;
-  font-size:12px;
-}
-
-.big{
-  font-size:20px;
-  font-weight:900;
-}
-
-.money{
-  font-weight:900;
-  font-size:16px;
-}
-
-.positive{
-  color:#1769e0;
-}
-
-.negative{
-  color:#e5484d;
-}
-
-.account{
-  cursor:pointer;
-}
-
-.account-name{
-  font-weight:900;
-  font-size:15px;
-}
-
-.account-value{
-  font-size:18px;
-  font-weight:900;
-  margin-top:5px;
-}
-
-.account-grid{
+.grid{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
 }
 
-.mini{
+.box{
   background:#fff;
   border:1px solid #e5eaf0;
   border-radius:16px;
+  padding:15px;
+}
+
+.box .title{
+  font-size:12px;
+  color:#7b8797;
+}
+
+.box .value{
+  font-size:19px;
+  font-weight:900;
+  margin-top:7px;
+}
+
+.section{
+  font-size:16px;
+  font-weight:900;
+  margin:22px 2px 10px;
+}
+
+.muted{
+  color:#7b8797;
+  font-size:12px;
+}
+
+.green{color:#159447}
+.red{color:#d93434}
+
+.btn{
+  width:100%;
+  border:0;
+  border-radius:13px;
   padding:14px;
-}
-
-.bar{
-  height:8px;
-  background:#edf1f5;
-  border-radius:20px;
-  overflow:hidden;
-  margin-top:9px;
-}
-
-.bar i{
-  display:block;
-  height:100%;
   background:#1769e0;
-  border-radius:20px;
+  color:#fff;
+  font-size:15px;
+  font-weight:800;
+  margin-top:8px;
 }
 
-.chart{
-  display:flex;
-  align-items:flex-end;
-  gap:8px;
-  height:170px;
-  padding:10px 4px 0;
+.btn.gray{
+  background:#edf1f6;
+  color:#344054;
 }
 
-.chart-col{
-  flex:1;
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  justify-content:flex-end;
-  align-items:center;
-}
-
-.chart-bar{
-  width:70%;
-  min-height:4px;
-  border-radius:7px 7px 3px 3px;
-  background:#1769e0;
-}
-
-.chart-label{
-  font-size:10px;
-  color:#8290a2;
+input,select{
+  width:100%;
+  padding:13px;
+  border:1px solid #dce3eb;
+  border-radius:12px;
+  font-size:14px;
+  background:#fff;
   margin-top:6px;
 }
 
-.chart-value{
-  font-size:9px;
-  color:#526176;
-  margin-bottom:4px;
+label{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  margin-top:13px;
+}
+
+.empty{
+  text-align:center;
+  padding:28px 10px;
+  color:#8792a3;
+  font-size:13px;
+}
+
+.item{
+  padding:13px 0;
+  border-bottom:1px solid #edf0f4;
+}
+
+.item:last-child{
+  border-bottom:0;
 }
 
 .nav{
@@ -205,9 +175,9 @@ body{
   left:50%;
   transform:translateX(-50%);
   width:min(460px,100%);
-  height:70px;
+  height:72px;
   background:#fff;
-  border-top:1px solid #e4e9ef;
+  border-top:1px solid #e3e8ee;
   display:flex;
   justify-content:space-around;
   align-items:center;
@@ -217,9 +187,8 @@ body{
 .nav button{
   border:0;
   background:none;
-  color:#7d8999;
+  color:#8a95a5;
   font-size:10px;
-  cursor:pointer;
 }
 
 .nav button b{
@@ -232,98 +201,41 @@ body{
   color:#1769e0;
 }
 
-.btn{
-  width:100%;
-  border:0;
-  border-radius:14px;
-  padding:14px;
-  background:#1769e0;
-  color:#fff;
-  font-size:15px;
-  font-weight:900;
-  cursor:pointer;
-  margin-top:8px;
+.hidden{
+  display:none;
 }
 
-.btn.gray{
-  background:#edf2f7;
-  color:#334155;
-}
-
-input{
-  width:100%;
-  border:1px solid #dce3eb;
-  border-radius:12px;
-  padding:13px;
-  font-size:15px;
-  background:#fff;
-}
-
-label{
-  display:block;
-  font-size:12px;
-  font-weight:800;
-  margin:13px 0 6px;
-}
-
-.back{
-  border:0;
-  background:none;
-  font-size:25px;
-  padding:0;
-  cursor:pointer;
-}
-
-.title{
-  font-size:23px;
-  font-weight:900;
-}
-
-.month{
+.modal-bg{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:30;
   display:flex;
-  justify-content:space-between;
-  align-items:center;
+  align-items:flex-end;
+  justify-content:center;
 }
 
-.month button{
+.modal{
+  width:min(460px,100%);
+  background:#fff;
+  border-radius:22px 22px 0 0;
+  padding:20px;
+  max-height:90vh;
+  overflow:auto;
+}
+
+.modal h2{
+  margin:0 0 10px;
+  font-size:19px;
+}
+
+.close{
+  float:right;
   border:0;
-  background:#edf3fa;
-  border-radius:10px;
-  padding:8px 12px;
-  cursor:pointer;
-}
-
-.table-row{
-  display:grid;
-  grid-template-columns:1.25fr 1fr 1fr;
-  gap:5px;
-  align-items:center;
-  padding:11px 0;
-  border-bottom:1px solid #edf0f3;
-  font-size:12px;
-}
-
-.table-row:last-child{
-  border-bottom:0;
-}
-
-.holding{
-  padding:13px 0;
-  border-bottom:1px solid #edf0f3;
-}
-
-.holding:last-child{
-  border-bottom:0;
-}
-
-.notice{
-  background:#edf6ff;
-  border:1px solid #d6eaff;
-  color:#315477;
-  border-radius:15px;
-  padding:13px;
-  font-size:12px;
-  line-height:1.5;
+  background:#edf1f6;
+  border-radius:50%;
+  width:32px;
+  height:32px;
 }
 </style>
 </head>
@@ -333,162 +245,260 @@ label{
 <div class="app">
 
 <header class="header">
-  <div class="logo"><span>₩</span> MY ASSET</div>
+  <div class="logo"><span>MY</span> ASSET</div>
+  <div class="muted">우리집 자산관리</div>
 </header>
 
 
 <!-- HOME -->
+
 <section id="home" class="wrap">
 
-  <div class="hero">
-    <div class="small" id="homeMonth">2026년 8월 기준</div>
-    <div class="total" id="totalAsset">0원</div>
-    <div class="change" id="totalChange">전월 대비 계산 중</div>
+  <div class="card total-card">
+
+    <div class="label">현재 순자산</div>
+
+    <div class="total" id="netAsset">0원</div>
+
+    <div class="row">
+      <div>
+        <div class="label">총자산</div>
+        <b id="totalAsset">0원</b>
+      </div>
+
+      <div>
+        <div class="label">총부채</div>
+        <b id="totalDebt">0원</b>
+      </div>
+    </div>
+
   </div>
 
-  <div class="section">내 자산</div>
 
-  <div class="account-grid" id="accountGrid"></div>
+  <div class="section">자산 현황</div>
 
-  <div class="section">총자산 추이</div>
+  <div class="grid">
 
-  <div class="card">
-    <div class="chart" id="chart"></div>
+    <div class="box">
+      <div class="title">현금·예금</div>
+      <div class="value" id="cashAsset">0원</div>
+    </div>
+
+    <div class="box">
+      <div class="title">투자</div>
+      <div class="value" id="investmentAsset">0원</div>
+    </div>
+
+    <div class="box">
+      <div class="title">부동산</div>
+      <div class="value" id="realEstateAsset">0원</div>
+    </div>
+
+    <div class="box">
+      <div class="title">기타자산</div>
+      <div class="value" id="etcAsset">0원</div>
+    </div>
+
   </div>
 
-  <div class="section">자산 구성</div>
 
-  <div class="card" id="allocation"></div>
+  <div class="section">이번 달 현금흐름</div>
+
+  <div class="grid">
+
+    <div class="box">
+      <div class="title">수입</div>
+      <div class="value green" id="monthIncome">0원</div>
+    </div>
+
+    <div class="box">
+      <div class="title">지출</div>
+      <div class="value red" id="monthExpense">0원</div>
+    </div>
+
+  </div>
+
 
   <div class="section">최근 기록</div>
 
-  <div class="card" id="recent"></div>
-
-</section>
-
-
-<!-- ASSETS -->
-<section id="assets" class="wrap hidden">
-
-  <button class="back" onclick="go('home')">‹</button>
-  <div class="title">자산현황</div>
-
-  <div class="card">
-    <div class="muted">현재 총자산</div>
-    <div class="big" id="assetTotal"></div>
+  <div class="card" id="recentList">
+    <div class="empty">아직 입력된 내역이 없습니다.</div>
   </div>
 
-  <div id="assetCards"></div>
-
 </section>
 
 
-<!-- ACCOUNT DETAIL -->
-<section id="detail" class="wrap hidden">
+<!-- LEDGER -->
 
-  <button class="back" onclick="go('assets')">‹</button>
+<section id="ledger" class="wrap hidden">
 
-  <div class="title" id="detailName"></div>
+  <div class="section" style="margin-top:4px">
+    가계부
+  </div>
 
   <div class="card">
-    <div class="muted">평가금액</div>
-    <div class="big" id="detailValue"></div>
-
-    <div style="height:12px"></div>
 
     <div class="row">
-      <span class="muted">투자금액</span>
-      <b id="detailInvest"></b>
+      <div>
+        <b>이번 달 수입</b>
+        <div class="green" id="ledgerIncome">0원</div>
+      </div>
+
+      <div>
+        <b>이번 달 지출</b>
+        <div class="red" id="ledgerExpense">0원</div>
+      </div>
     </div>
 
-    <div class="row" style="margin-top:7px">
-      <span class="muted">평가손익</span>
-      <b id="detailProfit"></b>
-    </div>
-
-    <div class="row" style="margin-top:7px">
-      <span class="muted">수익률</span>
-      <b id="detailRate"></b>
-    </div>
   </div>
 
-  <div class="section">보유 종목</div>
+  <button class="btn" onclick="openTransaction('income')">
+    + 수입 입력
+  </button>
 
-  <div class="card" id="holdings"></div>
+  <button class="btn gray" onclick="openTransaction('expense')">
+    + 지출 입력
+  </button>
+
+  <div class="section">거래내역</div>
+
+  <div class="card" id="transactionList"></div>
 
 </section>
 
 
-<!-- INVEST -->
-<section id="invest" class="wrap hidden">
+<!-- ASSET -->
 
-  <div class="title">투자현황</div>
+<section id="asset" class="wrap hidden">
+
+  <div class="section" style="margin-top:4px">
+    자산
+  </div>
+
+  <button class="btn" onclick="openAsset()">
+    + 자산 추가
+  </button>
+
+  <div class="section">내 자산</div>
+
+  <div class="card" id="assetList"></div>
+
+</section>
+
+
+<!-- DEBT -->
+
+<section id="debt" class="wrap hidden">
+
+  <div class="section" style="margin-top:4px">
+    부채
+  </div>
+
+  <button class="btn" onclick="openDebt()">
+    + 부채 추가
+  </button>
+
+  <div class="section">내 부채</div>
+
+  <div class="card" id="debtList"></div>
+
+</section>
+
+
+<!-- ANALYSIS -->
+
+<section id="analysis" class="wrap hidden">
+
+  <div class="section" style="margin-top:4px">
+    자산 분석
+  </div>
 
   <div class="card">
-    <div class="muted">전체 투자금액</div>
-    <div class="big" id="investTotal"></div>
 
-    <div style="height:13px"></div>
+    <div class="row">
+      <span>순자산</span>
+      <b id="analysisNet">0원</b>
+    </div>
 
-    <div class="muted">전체 평가금액</div>
-    <div class="big" id="investValue"></div>
+    <div style="height:14px"></div>
 
-    <div style="height:13px"></div>
+    <div class="row">
+      <span>자산</span>
+      <b id="analysisAsset">0원</b>
+    </div>
 
-    <div class="muted">전체 평가손익</div>
-    <div class="big" id="investProfit"></div>
+    <div style="height:14px"></div>
+
+    <div class="row">
+      <span>부채</span>
+      <b id="analysisDebt">0원</b>
+    </div>
+
   </div>
 
-  <div class="section">계좌별 수익률</div>
-  <div id="investAccounts"></div>
+  <div class="section">이번 달 저축</div>
 
-  <div class="section">투자자산 비중</div>
-  <div class="card" id="investAllocation"></div>
+  <div class="card">
+
+    <div class="row">
+      <span>수입</span>
+      <b id="analysisIncome">0원</b>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <span>지출</span>
+      <b id="analysisExpense">0원</b>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <span>저축액</span>
+      <b id="analysisSaving">0원</b>
+    </div>
+
+  </div>
 
 </section>
 
 
-<!-- MONTHLY -->
-<section id="monthly" class="wrap hidden">
+<!-- MODAL -->
 
-  <div class="title">월간기록</div>
+<div id="modalBg" class="modal-bg hidden">
 
-  <div class="notice" style="margin-top:12px">
-    매월 한 번 현재 자산을 입력하면 총자산과 전월 대비 변화가 자동으로 계산됩니다.
+  <div class="modal">
+
+    <button class="close" onclick="closeModal()">×</button>
+
+    <h2 id="modalTitle"></h2>
+
+    <div id="modalContent"></div>
+
   </div>
 
-  <div class="section">2026년 9월 업데이트</div>
-
-  <div id="monthlyForm"></div>
-
-  <button class="btn" onclick="saveMonth()">저장하기</button>
-
-  <div id="saveMsg"></div>
-
-  <div class="section">월별 기록</div>
-
-  <div class="card" id="monthlyHistory"></div>
-
-</section>
+</div>
 
 
 <!-- NAV -->
+
 <nav class="nav">
 
-  <button id="navHome" class="on" onclick="go('home')">
+  <button class="on" onclick="go('home',this)">
     <b>⌂</b>홈
   </button>
 
-  <button id="navAssets" onclick="go('assets')">
-    <b>▣</b>자산현황
+  <button onclick="go('ledger',this)">
+    <b>₩</b>가계부
   </button>
 
-  <button id="navInvest" onclick="go('invest')">
-    <b>↗</b>투자현황
+  <button onclick="go('asset',this)">
+    <b>▣</b>자산
   </button>
 
-  <button id="navMonthly" onclick="go('monthly')">
-    <b>▤</b>월간기록
+  <button onclick="go('debt',this)">
+    <b>▤</b>부채
+  </button>
+
+  <button onclick="go('analysis',this)">
+    <b>◔</b>분석
   </button>
 
 </nav>
@@ -498,687 +508,469 @@ label{
 
 <script>
 
-/* =========================
-   초기 데이터
-========================= */
+const KEY="my_asset_data_v1";
 
-const baseData = {
-
-  "2026-01":{
-    label:"2026년 1월",
-    pension:{invest:8811652,value:10273054},
-    isa:{invest:23881257,value:27395962},
-    toss:{invest:27648098.2,value:27239522.94},
-    savings:{invest:7000000,value:7000000}
-  },
-
-  "2026-02":{
-    label:"2026년 2월",
-    pension:{invest:9318998,value:10570639},
-    isa:{invest:24381257,value:27354081},
-    toss:{invest:28148098.2,value:28285886},
-    savings:{invest:7700000,value:7700000}
-  },
-
-  "2026-03":{
-    label:"2026년 3월",
-    pension:{invest:9821105,value:10828598},
-    isa:{invest:24881257,value:27936267},
-    toss:{invest:28648098.2,value:29204010},
-    savings:{invest:8400000,value:8400000}
-  },
-
-  "2026-04":{
-    label:"2026년 4월",
-    pension:{invest:11132438,value:13289132},
-    isa:{invest:26381257,value:28952746},
-    toss:{invest:29148098.2,value:30606458},
-    savings:{invest:9100000,value:9100000}
-  },
-
-  "2026-05":{
-    label:"2026년 5월",
-    pension:{invest:11632438,value:14900933},
-    isa:{invest:26881257,value:33665543},
-    toss:{invest:29648098.2,value:34547490},
-    savings:{invest:9800000,value:9800000}
-  },
-
-  "2026-06":{
-    label:"2026년 6월",
-    pension:{invest:12132438,value:15408571},
-    isa:{invest:27381257,value:30116870},
-    toss:{invest:30148098.2,value:31613827},
-    savings:{invest:10500000,value:10500000}
-  },
-
-  "2026-07":{
-    label:"2026년 7월",
-    pension:{invest:12632438,value:14553961},
-    isa:{invest:27881257,value:23317000},
-    toss:{invest:30648098.2,value:28967248},
-    savings:{invest:11200000,value:11200000}
-  },
-
-  "2026-08":{
-    label:"2026년 8월",
-    pension:{invest:13132438,value:15098891},
-    isa:{invest:28381257,value:24413816},
-    toss:{invest:31148098.2,value:30710604},
-    savings:{invest:11900000,value:11900000}
-  }
-
+let data=JSON.parse(localStorage.getItem(KEY)||'null')||{
+  assets:[],
+  debts:[],
+  transactions:[]
 };
 
-
-/* =========================
-   현재 보유 종목
-========================= */
-
-const holdings = {
-
-  pension:[
-    ["TIGER 미국나스닥100",30,144918,179490,5384700,0.23856],
-    ["RISE 미국S&P500",205,18414,22980,4710900,0.24796],
-    ["ACE KRX금현물",35,29984,28390,993650,-0.05316],
-    ["ACE 미국빅테크TOP7",90,22176,24165,2174850,0.08969],
-    ["TIGER 미국필라델피아반도체",28,48408,41925,1173900,-0.13392],
-    ["현금",null,null,null,660891,null]
-  ],
-
-  isa:[
-    ["KoAct 글로벌AI메모리반도체",120,18733,13935,1672200,-0.25613],
-    ["KODEX 미국AI전력핵심인프라",60,28223,19380,1162800,-0.31333],
-    ["SOL AI반도체TOP2플러스",80,24925,17250,1380000,-0.30792],
-    ["TIGER 코리아AI전력기기TOP3",60,20565,19910,1194600,-0.03185],
-    ["TIME 글로벌휴머노이드로봇산업",100,9200,7420,742000,-0.19348],
-    ["KODEX 미국나스닥100",88,27745,26835,2361480,-0.03280],
-    ["삼성전자",33,293121,256500,8464500,-0.12493],
-    ["하이닉스",3,2560000,1658000,4974000,-0.35234],
-    ["삼성전기",1,1790000,1405000,1405000,-0.21508],
-    ["예수금",null,null,null,1057236,null]
-  ],
-
-  toss:[
-    ["QQQM",20,397118,407188,8143760,0.02536],
-    ["SPYM",16,123969,125013,2000208,0.00842],
-    ["알파벳",10,503492,478398,4783980,-0.04984],
-    ["엔비디아",12,290687,300284,3603408,0.03301],
-    ["ASML",1,2873556,2341209,2341209,-0.18526],
-    ["메타",2,820700,797841,1595682,-0.02785],
-    ["스페이스X",1,160770,195312,195312,0.21485],
-    ["QLD",32,128010,124461,3982752,-0.02772],
-    ["CONL",157,13290,7798,1224286,-0.41324],
-    ["ETHU",48,39269,35501,1704048,-0.09595],
-    ["원화",null,null,null,0,null]
-  ]
-
-};
-
-
-/* =========================
-   설정
-========================= */
-
-const accounts = {
-  pension:{name:"연금저축"},
-  isa:{name:"ISA"},
-  toss:{name:"토스증권"},
-  savings:{name:"청년도약계좌"}
-};
-
-let data = JSON.parse(localStorage.getItem("myAssetData") || "null") || baseData;
-
-
-/* =========================
-   공통 함수
-========================= */
-
-function money(n){
-  return Math.round(n).toLocaleString("ko-KR")+"원";
+function save(){
+  localStorage.setItem(KEY,JSON.stringify(data));
+  render();
 }
 
-function pct(n){
-  if(n === null || n === undefined || isNaN(n)) return "-";
-  return (n*100).toFixed(2)+"%";
+function won(n){
+  return Number(n||0).toLocaleString("ko-KR")+"원";
 }
 
-function profit(item){
-  return item.value-item.invest;
+function monthNow(){
+  const d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
 }
 
-function total(month){
-  if(!month) return 0;
-  return Object.values(accounts)
-    .reduce((sum,key)=>sum+(month[key]?.value||0),0);
-}
+function go(id,btn){
 
-function investTotal(month){
-  if(!month) return 0;
-  return Object.values(accounts)
-    .reduce((sum,key)=>sum+(month[key]?.invest||0),0);
-}
-
-function latestKey(){
-  const keys=Object.keys(data).sort();
-  return keys[keys.length-1];
-}
-
-function previousKey(key){
-  const keys=Object.keys(data).sort();
-  const i=keys.indexOf(key);
-  return i>0?keys[i-1]:null;
-}
-
-
-/* =========================
-   화면 이동
-========================= */
-
-function go(id){
-
-  document.querySelectorAll("section.wrap")
+  document.querySelectorAll(".wrap")
     .forEach(x=>x.classList.add("hidden"));
 
-  document.getElementById(id).classList.remove("hidden");
+  document.getElementById(id)
+    .classList.remove("hidden");
 
   document.querySelectorAll(".nav button")
     .forEach(x=>x.classList.remove("on"));
 
-  if(id==="home") navHome.classList.add("on");
-  if(id==="assets") navAssets.classList.add("on");
-  if(id==="invest") navInvest.classList.add("on");
-  if(id==="monthly") navMonthly.classList.add("on");
+  if(btn) btn.classList.add("on");
 
-  window.scrollTo(0,0);
+  render();
 
-  if(id==="home") renderHome();
-  if(id==="assets") renderAssets();
-  if(id==="invest") renderInvest();
-  if(id==="monthly") renderMonthly();
+  scrollTo(0,0);
 }
 
 
-/* =========================
-   홈
-========================= */
+function totals(){
 
-function renderHome(){
+  const asset=data.assets.reduce(
+    (s,x)=>s+Number(x.amount||0),0
+  );
 
-  const key=latestKey();
-  const month=data[key];
-  const prev=data[previousKey(key)];
+  const debt=data.debts.reduce(
+    (s,x)=>s+Number(x.amount||0),0
+  );
 
-  const t=total(month);
-  const p=prev?total(prev):0;
-  const diff=t-p;
+  const cash=data.assets
+    .filter(x=>x.type==="현금·예금")
+    .reduce((s,x)=>s+Number(x.amount||0),0);
 
-  homeMonth.textContent=month.label+" 기준";
-  totalAsset.textContent=money(t);
+  const investment=data.assets
+    .filter(x=>x.type==="투자")
+    .reduce((s,x)=>s+Number(x.amount||0),0);
 
-  totalChange.textContent=
-    "전월 대비 "+
-    (diff>=0?"+":"")+
-    money(diff)+
-    " ("+
-    (p?(diff/p*100).toFixed(2):0)+
-    "%)";
+  const realEstate=data.assets
+    .filter(x=>x.type==="부동산")
+    .reduce((s,x)=>s+Number(x.amount||0),0);
 
-  totalChange.className=
-    "change "+(diff>=0?"":"negative");
+  const etc=data.assets
+    .filter(x=>x.type==="기타")
+    .reduce((s,x)=>s+Number(x.amount||0),0);
 
-  accountGrid.innerHTML=
-    Object.entries(accounts).map(([key,a])=>{
+  const month=monthNow();
 
-      const v=month[key]?.value||0;
+  const income=data.transactions
+    .filter(x=>x.month===month&&x.type==="income")
+    .reduce((s,x)=>s+Number(x.amount||0),0);
 
-      return `
-      <div class="mini account" onclick="openAccount('${key}')">
-        <div class="account-name">${a.name}</div>
-        <div class="account-value">${money(v)}</div>
-        <div class="muted">
-          ${t?((v/t)*100).toFixed(1):0}%
-        </div>
-      </div>`;
+  const expense=data.transactions
+    .filter(x=>x.month===month&&x.type==="expense")
+    .reduce((s,x)=>s+Number(x.amount||0),0);
 
-    }).join("");
-
-  renderChart();
-  renderAllocation();
-
-  recent.innerHTML=`
-    <div class="row">
-      <span class="muted">마지막 업데이트</span>
-      <b>${month.label}</b>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <span class="muted">총 투자금액</span>
-      <b>${money(investTotal(month))}</b>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <span class="muted">전체 평가손익</span>
-      <b class="${t-investTotal(month)>=0?'positive':'negative'}">
-        ${money(t-investTotal(month))}
-      </b>
-    </div>
-  `;
+  return {
+    asset,
+    debt,
+    net:asset-debt,
+    cash,
+    investment,
+    realEstate,
+    etc,
+    income,
+    expense,
+    saving:income-expense
+  };
 }
 
 
-/* =========================
-   차트
-========================= */
+function render(){
 
-function renderChart(){
+  const t=totals();
 
-  const keys=Object.keys(data).sort();
+  document.getElementById("netAsset").textContent=won(t.net);
+  document.getElementById("totalAsset").textContent=won(t.asset);
+  document.getElementById("totalDebt").textContent=won(t.debt);
 
-  const values=keys.map(k=>total(data[k]));
-  const max=Math.max(...values);
+  document.getElementById("cashAsset").textContent=won(t.cash);
+  document.getElementById("investmentAsset").textContent=won(t.investment);
+  document.getElementById("realEstateAsset").textContent=won(t.realEstate);
+  document.getElementById("etcAsset").textContent=won(t.etc);
 
-  chart.innerHTML=keys.map((k,i)=>{
+  document.getElementById("monthIncome").textContent=won(t.income);
+  document.getElementById("monthExpense").textContent=won(t.expense);
 
-    const v=values[i];
-    const height=max?(v/max*100):0;
+  document.getElementById("ledgerIncome").textContent=won(t.income);
+  document.getElementById("ledgerExpense").textContent=won(t.expense);
 
-    return `
-      <div class="chart-col">
-        <div class="chart-value">${Math.round(v/1000000)}M</div>
-        <div class="chart-bar" style="height:${height}%"></div>
-        <div class="chart-label">${k.slice(5)}월</div>
+  document.getElementById("analysisNet").textContent=won(t.net);
+  document.getElementById("analysisAsset").textContent=won(t.asset);
+  document.getElementById("analysisDebt").textContent=won(t.debt);
+  document.getElementById("analysisIncome").textContent=won(t.income);
+  document.getElementById("analysisExpense").textContent=won(t.expense);
+  document.getElementById("analysisSaving").textContent=won(t.saving);
+
+  renderTransactions();
+  renderAssets();
+  renderDebts();
+  renderRecent();
+}
+
+
+function renderRecent(){
+
+  const box=document.getElementById("recentList");
+
+  const arr=[...data.transactions]
+    .sort((a,b)=>b.created-a.created)
+    .slice(0,5);
+
+  if(!arr.length){
+    box.innerHTML='<div class="empty">아직 입력된 내역이 없습니다.</div>';
+    return;
+  }
+
+  box.innerHTML=arr.map(x=>`
+
+    <div class="item">
+
+      <div class="row">
+
+        <b>${x.memo||"내역"}</b>
+
+        <b class="${x.type==="income"?"green":"red"}">
+          ${x.type==="income"?"+":"-"}${won(x.amount)}
+        </b>
+
       </div>
-    `;
 
-  }).join("");
-}
-
-
-/* =========================
-   자산 구성
-========================= */
-
-function renderAllocation(){
-
-  const key=latestKey();
-  const m=data[key];
-  const t=total(m);
-
-  allocation.innerHTML=
-    Object.entries(accounts).map(([key,a])=>{
-
-      const v=m[key]?.value||0;
-      const ratio=t?v/t*100:0;
-
-      return `
-      <div style="margin-bottom:14px">
-        <div class="row">
-          <span>${a.name}</span>
-          <b>${money(v)}</b>
-        </div>
-        <div class="bar">
-          <i style="width:${ratio}%"></i>
-        </div>
-        <div class="muted" style="margin-top:4px">
-          ${ratio.toFixed(1)}%
-        </div>
+      <div class="muted">
+        ${x.category||""} · ${x.month}
       </div>
-      `;
 
-    }).join("");
+    </div>
+
+  `).join("");
 }
 
 
-/* =========================
-   자산현황
-========================= */
+function renderTransactions(){
+
+  const box=document.getElementById("transactionList");
+
+  if(!data.transactions.length){
+    box.innerHTML='<div class="empty">등록된 가계부 내역이 없습니다.</div>';
+    return;
+  }
+
+  const arr=[...data.transactions]
+    .sort((a,b)=>b.created-a.created);
+
+  box.innerHTML=arr.map((x,i)=>`
+
+    <div class="item">
+
+      <div class="row">
+
+        <div>
+          <b>${x.memo||"내역"}</b>
+          <div class="muted">
+            ${x.month} · ${x.category||"기타"}
+          </div>
+        </div>
+
+        <div class="${x.type==="income"?"green":"red"}">
+          ${x.type==="income"?"+":"-"}${won(x.amount)}
+        </div>
+
+      </div>
+
+      <button
+        class="btn gray"
+        style="padding:8px;margin-top:8px"
+        onclick="deleteTransaction(${i})">
+        삭제
+      </button>
+
+    </div>
+
+  `).join("");
+}
+
 
 function renderAssets(){
 
-  const key=latestKey();
-  const m=data[key];
+  const box=document.getElementById("assetList");
 
-  assetTotal.textContent=money(total(m));
-
-  assetCards.innerHTML=
-    Object.entries(accounts).map(([key,a])=>{
-
-      const item=m[key];
-      const pf=profit(item);
-      const rate=item.invest?pf/item.invest:0;
-
-      return `
-      <div class="card account" onclick="openAccount('${key}')">
-
-        <div class="row">
-          <b>${a.name}</b>
-          <span class="muted">›</span>
-        </div>
-
-        <div class="account-value">
-          ${money(item.value)}
-        </div>
-
-        <div class="row" style="margin-top:9px">
-          <span class="muted">투자금액</span>
-          <span>${money(item.invest)}</span>
-        </div>
-
-        <div class="row" style="margin-top:6px">
-          <span class="muted">평가손익</span>
-          <b class="${pf>=0?'positive':'negative'}">
-            ${pf>=0?"+":""}${money(pf)}
-          </b>
-        </div>
-
-        <div class="row" style="margin-top:6px">
-          <span class="muted">수익률</span>
-          <b class="${rate>=0?'positive':'negative'}">
-            ${pct(rate)}
-          </b>
-        </div>
-
-      </div>
-      `;
-
-    }).join("");
-}
-
-
-/* =========================
-   계좌 상세
-========================= */
-
-function openAccount(key){
-
-  const month=data[latestKey()];
-  const item=month[key];
-
-  detailName.textContent=accounts[key].name;
-  detailValue.textContent=money(item.value);
-  detailInvest.textContent=money(item.invest);
-
-  const pf=profit(item);
-  const rate=item.invest?pf/item.invest:0;
-
-  detailProfit.textContent=(pf>=0?"+":"")+money(pf);
-  detailProfit.className=pf>=0?"positive":"negative";
-
-  detailRate.textContent=pct(rate);
-  detailRate.className=rate>=0?"positive":"negative";
-
-  if(key==="savings"){
-
-    holdings.innerHTML=`
-      <div class="holding">
-        <b>청년도약계좌</b>
-        <div class="muted">현재 납입금액 기준으로 관리</div>
-      </div>
-    `;
-
-  }else{
-
-    holdings.innerHTML=holdingsData(key);
-
+  if(!data.assets.length){
+    box.innerHTML='<div class="empty">등록된 자산이 없습니다.</div>';
+    return;
   }
 
-  go("detail");
-}
+  box.innerHTML=data.assets.map((x,i)=>`
 
+    <div class="item">
 
-function holdingsData(key){
-
-  const arr=holdings[key]||[];
-
-  return arr.map(x=>{
-
-    const name=x[0];
-    const qty=x[1];
-    const avg=x[2];
-    const cur=x[3];
-    const value=x[4];
-    const rate=x[5];
-
-    return `
-      <div class="holding">
-
-        <div class="row">
-          <b>${name}</b>
-          <b>${money(value)}</b>
+      <div class="row">
+        <div>
+          <b>${x.name}</b>
+          <div class="muted">${x.type}</div>
         </div>
 
-        <div class="muted" style="margin-top:6px">
-
-          ${qty!==null?`보유 ${qty}주 · `:""}
-
-          ${rate!==null?
-            `<span class="${rate>=0?'positive':'negative'}">
-              ${pct(rate)}
-            </span>`:""}
-
-        </div>
-
-        ${
-          avg!==null?
-          `<div class="muted">
-            매수 ${money(avg)} · 현재 ${money(cur)}
-          </div>`:""
-        }
-
+        <b>${won(x.amount)}</b>
       </div>
-    `;
 
-  }).join("");
-}
+      <button
+        class="btn gray"
+        style="padding:8px;margin-top:8px"
+        onclick="deleteAsset(${i})">
+        삭제
+      </button>
 
-
-/* =========================
-   투자현황
-========================= */
-
-function renderInvest(){
-
-  const m=data[latestKey()];
-
-  const it=investTotal(m);
-  const tv=total(m);
-  const pf=tv-it;
-
-  investTotalEl.textContent=money(it);
-  investValue.textContent=money(tv);
-
-  investProfit.textContent=
-    (pf>=0?"+":"")+money(pf);
-
-  investProfit.className=
-    "big "+(pf>=0?"positive":"negative");
-
-  investAccounts.innerHTML=
-    Object.entries(accounts).map(([key,a])=>{
-
-      const x=m[key];
-      const p=x.value-x.invest;
-      const r=x.invest?p/x.invest:0;
-
-      return `
-      <div class="card">
-        <div class="row">
-          <b>${a.name}</b>
-          <b class="${r>=0?'positive':'negative'}">
-            ${pct(r)}
-          </b>
-        </div>
-
-        <div class="muted" style="margin-top:8px">
-          ${money(x.value)}
-        </div>
-
-        <div class="muted">
-          손익
-          <span class="${p>=0?'positive':'negative'}">
-            ${p>=0?"+":""}${money(p)}
-          </span>
-        </div>
-      </div>
-      `;
-
-    }).join("");
-
-  investAllocation.innerHTML=
-    Object.entries(accounts).map(([key,a])=>{
-
-      const v=m[key].value;
-      const ratio=tv?v/tv*100:0;
-
-      return `
-      <div style="margin-bottom:14px">
-        <div class="row">
-          <span>${a.name}</span>
-          <b>${ratio.toFixed(1)}%</b>
-        </div>
-
-        <div class="bar">
-          <i style="width:${ratio}%"></i>
-        </div>
-      </div>
-      `;
-
-    }).join("");
-}
-
-
-/* =========================
-   월간 업데이트
-========================= */
-
-function renderMonthly(){
-
-  const m=data["2026-09"] || {
-    label:"2026년 9월",
-    pension:{invest:"",value:""},
-    isa:{invest:"",value:""},
-    toss:{invest:"",value:""},
-    savings:{invest:"",value:""}
-  };
-
-  monthlyForm.innerHTML=
-    Object.entries(accounts).map(([key,a])=>{
-
-      return `
-      <div class="card">
-
-        <b>${a.name}</b>
-
-        <label>투자금액 / 납입금액</label>
-        <input
-          id="${key}_invest"
-          type="number"
-          value="${m[key]?.invest ?? ""}"
-          placeholder="예: 13500000"
-        >
-
-        <label>현재 평가금액</label>
-        <input
-          id="${key}_value"
-          type="number"
-          value="${m[key]?.value ?? ""}"
-          placeholder="예: 15500000"
-        >
-
-      </div>
-      `;
-
-    }).join("");
-
-  renderHistory();
-}
-
-
-function saveMonth(){
-
-  data["2026-09"]={
-    label:"2026년 9월",
-
-    pension:{
-      invest:Number(pension_invest.value)||0,
-      value:Number(pension_value.value)||0
-    },
-
-    isa:{
-      invest:Number(isa_invest.value)||0,
-      value:Number(isa_value.value)||0
-    },
-
-    toss:{
-      invest:Number(toss_invest.value)||0,
-      value:Number(toss_value.value)||0
-    },
-
-    savings:{
-      invest:Number(savings_invest.value)||0,
-      value:Number(savings_value.value)||0
-    }
-  };
-
-  localStorage.setItem(
-    "myAssetData",
-    JSON.stringify(data)
-  );
-
-  saveMsg.innerHTML=`
-    <div class="notice" style="margin-top:12px">
-      2026년 9월 자산이 저장되었습니다.
     </div>
+
+  `).join("");
+}
+
+
+function renderDebts(){
+
+  const box=document.getElementById("debtList");
+
+  if(!data.debts.length){
+    box.innerHTML='<div class="empty">등록된 부채가 없습니다.</div>';
+    return;
+  }
+
+  box.innerHTML=data.debts.map((x,i)=>`
+
+    <div class="item">
+
+      <div class="row">
+        <div>
+          <b>${x.name}</b>
+          <div class="muted">${x.rate||0}% · ${x.type}</div>
+        </div>
+
+        <b class="red">${won(x.amount)}</b>
+      </div>
+
+      <button
+        class="btn gray"
+        style="padding:8px;margin-top:8px"
+        onclick="deleteDebt(${i})">
+        삭제
+      </button>
+
+    </div>
+
+  `).join("");
+}
+
+
+function openTransaction(type){
+
+  document.getElementById("modalTitle").textContent=
+    type==="income"?"수입 입력":"지출 입력";
+
+  document.getElementById("modalContent").innerHTML=`
+
+    <label>금액</label>
+    <input id="mAmount" type="number" placeholder="예: 3500000">
+
+    <label>카테고리</label>
+    <input id="mCategory" placeholder="급여, 식비, 교통비 등">
+
+    <label>내용</label>
+    <input id="mMemo" placeholder="예: 9월 급여">
+
+    <button class="btn" onclick="saveTransaction('${type}')">
+      저장
+    </button>
+
   `;
 
-  renderHistory();
+  document.getElementById("modalBg").classList.remove("hidden");
 }
 
 
-function renderHistory(){
+function saveTransaction(type){
 
-  const keys=Object.keys(data).sort().reverse();
+  const amount=Number(document.getElementById("mAmount").value);
 
-  monthlyHistory.innerHTML=
-    keys.map(k=>{
+  if(!amount){
+    alert("금액을 입력해주세요.");
+    return;
+  }
 
-      const m=data[k];
+  data.transactions.push({
+    type,
+    amount,
+    category:document.getElementById("mCategory").value,
+    memo:document.getElementById("mMemo").value,
+    month:monthNow(),
+    created:Date.now()
+  });
 
-      return `
-      <div class="table-row">
-
-        <b>${m.label.replace("2026년 ","")}</b>
-
-        <span>${money(total(m))}</span>
-
-        <span class="${
-          total(m)-total(data[previousKey(k)]||{})
-          >=0?"positive":"negative"
-        }">
-
-          ${
-            previousKey(k)
-            ?
-            ((total(m)-total(data[previousKey(k)]))>=0?"+":"")
-            +money(total(m)-total(data[previousKey(k)]))
-            :"-"
-          }
-
-        </span>
-
-      </div>
-      `;
-
-    }).join("");
+  closeModal();
+  save();
 }
 
 
-/* =========================
-   초기 실행
-========================= */
+function openAsset(){
 
-const totalInvestEl=document.getElementById("investTotal");
+  document.getElementById("modalTitle").textContent="자산 추가";
 
-renderHome();
+  document.getElementById("modalContent").innerHTML=`
+
+    <label>자산 종류</label>
+
+    <select id="aType">
+      <option>현금·예금</option>
+      <option>투자</option>
+      <option>부동산</option>
+      <option>기타</option>
+    </select>
+
+    <label>자산 이름</label>
+    <input id="aName" placeholder="예: 국민은행 예금">
+
+    <label>금액</label>
+    <input id="aAmount" type="number" placeholder="예: 50000000">
+
+    <button class="btn" onclick="saveAsset()">
+      저장
+    </button>
+
+  `;
+
+  document.getElementById("modalBg").classList.remove("hidden");
+}
+
+
+function saveAsset(){
+
+  const name=document.getElementById("aName").value;
+  const amount=Number(document.getElementById("aAmount").value);
+
+  if(!name||!amount){
+    alert("자산 이름과 금액을 입력해주세요.");
+    return;
+  }
+
+  data.assets.push({
+    type:document.getElementById("aType").value,
+    name,
+    amount
+  });
+
+  closeModal();
+  save();
+}
+
+
+function openDebt(){
+
+  document.getElementById("modalTitle").textContent="부채 추가";
+
+  document.getElementById("modalContent").innerHTML=`
+
+    <label>부채 종류</label>
+
+    <select id="dType">
+      <option>주택담보대출</option>
+      <option>신용대출</option>
+      <option>자동차대출</option>
+      <option>기타</option>
+    </select>
+
+    <label>대출 이름</label>
+    <input id="dName" placeholder="예: 주택담보대출">
+
+    <label>현재 잔액</label>
+    <input id="dAmount" type="number" placeholder="예: 200000000">
+
+    <label>금리 (%)</label>
+    <input id="dRate" type="number" step="0.01" placeholder="예: 3.5">
+
+    <button class="btn" onclick="saveDebt()">
+      저장
+    </button>
+
+  `;
+
+  document.getElementById("modalBg").classList.remove("hidden");
+}
+
+
+function saveDebt(){
+
+  const name=document.getElementById("dName").value;
+  const amount=Number(document.getElementById("dAmount").value);
+
+  if(!name||!amount){
+    alert("대출 이름과 잔액을 입력해주세요.");
+    return;
+  }
+
+  data.debts.push({
+    type:document.getElementById("dType").value,
+    name,
+    amount,
+    rate:Number(document.getElementById("dRate").value)||0
+  });
+
+  closeModal();
+  save();
+}
+
+
+function closeModal(){
+  document.getElementById("modalBg").classList.add("hidden");
+}
+
+
+function deleteTransaction(i){
+  if(confirm("이 내역을 삭제할까요?")){
+    data.transactions.splice(i,1);
+    save();
+  }
+}
+
+
+function deleteAsset(i){
+  if(confirm("이 자산을 삭제할까요?")){
+    data.assets.splice(i,1);
+    save();
+  }
+}
+
+
+function deleteDebt(i){
+  if(confirm("이 부채를 삭제할까요?")){
+    data.debts.splice(i,1);
+    save();
+  }
+}
+
+
+render();
 
 </script>
 
