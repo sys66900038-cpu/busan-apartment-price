@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1769e0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>MY ASSET V8</title>
+<title>MY ASSET V9</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;color:#172033}
@@ -38,6 +38,10 @@ body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"N
 .perf-box .k{font-size:11px;opacity:.82}.perf-box .v{font-size:13px;font-weight:900;margin-top:4px;color:#fff}
 .metric-row{display:grid;grid-template-columns:1.15fr 1fr .85fr;gap:6px;align-items:center;padding:10px 0;border-bottom:1px solid #edf0f4;font-size:12px}
 .metric-row:last-child{border-bottom:0}.metric-head{font-size:10px;color:#8a95a5;font-weight:800}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:#fff;border:1px solid #e5eaf0;border-radius:16px;padding:14px}
+.kpi .k{font-size:11px;color:#7b8797}.kpi .v{font-size:18px;font-weight:900;margin-top:5px}
+.kpi .s{font-size:10px;color:#8a95a5;margin-top:4px;line-height:1.4}
 .bar{height:8px;background:#edf1f5;border-radius:20px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;border-radius:20px}
 .btn{width:100%;border:0;border-radius:13px;padding:14px;background:#1769e0;color:#fff;font-weight:900;font-size:15px;margin-top:8px;cursor:pointer}
 .btn.gray{background:#edf2f7;color:#334155}.btn.small{width:auto;padding:7px 10px;font-size:12px;margin:0}
@@ -88,6 +92,20 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
   <div class="section">계좌별 자산</div>
   <div class="grid" id="accountGrid"></div>
 
+  <div class="section">자산 성장 vs 투자 성과</div>
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="k">연초 대비 자산 증가율</div>
+      <div class="v" id="assetGrowthRate">-</div>
+      <div class="s" id="assetGrowthAmount">-</div>
+    </div>
+    <div class="kpi">
+      <div class="k">현재 투자손익률</div>
+      <div class="v" id="investmentReturnRate">-</div>
+      <div class="s" id="investmentReturnAmount">-</div>
+    </div>
+  </div>
+
   <div class="section">총자산 추이</div>
   <div class="card">
     <div class="chart-wrap">
@@ -120,6 +138,9 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 <section id="invest" class="wrap hidden">
   <div class="section" style="margin-top:0">투자현황</div>
   <div class="card" id="investSummary"></div>
+  <div class="notice" id="performanceNote" style="margin:12px 0">
+    자산 증가율은 추가 납입금까지 포함한 총자산의 변화이고, 투자손익률은 투자계좌의 현재 평가손익 ÷ 현재 투자원금으로 계산합니다.
+  </div>
   <div class="notice" style="margin:12px 0">종목을 추가·수정·삭제하면 해당 계좌의 <b>평가금액</b>이 자동으로 다시 계산되어 최신 월 자산현황에 반영됩니다. 투자원금은 월간기록의 값을 유지합니다.</div>
   <div id="syncMsg"></div>
   <div id="holdingAccounts"></div>
@@ -241,6 +262,23 @@ function changeRate(curr,base){return Number(base||0)?(Number(curr||0)-Number(ba
 function signedMoney(n){return `${n>=0?"+":""}${money(n)}`}
 function signedPct(n){return n==null?"-":`${n>=0?"+":""}${(n*100).toFixed(2)}%`}
 
+const INVEST_ACCOUNTS=["pension","isa","toss"];
+
+function investmentPrincipal(m){
+ return INVEST_ACCOUNTS.reduce((s,k)=>s+Number(m?.[k]?.invest||0),0);
+}
+function investmentValue(m){
+ return INVEST_ACCOUNTS.reduce((s,k)=>s+Number(m?.[k]?.value||0),0);
+}
+function investmentProfit(m){
+ return investmentValue(m)-investmentPrincipal(m);
+}
+function investmentReturn(m){
+ const p=investmentPrincipal(m);
+ return p?investmentProfit(m)/p:null;
+}
+
+
 
 function go(id){
  document.querySelectorAll("section.wrap").forEach(x=>x.classList.add("hidden"));
@@ -266,6 +304,16 @@ function renderHome(){
  homeChange.className="change "+(d>=0?"pos":"neg");
  monthPerf.textContent=pk?`${signedMoney(d)} · ${signedPct(monthRate)}`:"-";
  ytdPerf.textContent=yk?`${signedMoney(ytdAmt)} · ${signedPct(ytdRate)}`:"-";
+
+ const invProfit=investmentProfit(m);
+ const invReturn=investmentReturn(m);
+ assetGrowthRate.textContent=yk?signedPct(ytdRate):"-";
+ assetGrowthRate.className="v "+(ytdRate==null||ytdRate>=0?"pos":"neg");
+ assetGrowthAmount.textContent=yk?`자산 ${signedMoney(ytdAmt)}`:"기준 데이터 없음";
+
+ investmentReturnRate.textContent=invReturn==null?"-":signedPct(invReturn);
+ investmentReturnRate.className="v "+(invReturn==null||invReturn>=0?"pos":"neg");
+ investmentReturnAmount.textContent=invReturn==null?"투자 데이터 없음":`평가손익 ${signedMoney(invProfit)}`;
  accountGrid.innerHTML=Object.entries(ACCOUNTS).map(([ak,a])=>{
    const v=m[ak]?.value||0;
    return `<div class="mini"><div class="name">${a.name}</div><div class="value">${money(v)}</div><div class="muted">${t?(v/t*100).toFixed(1):0}%</div></div>`;
@@ -405,15 +453,36 @@ function syncAllHoldingAccountsToLatestMonth(){
 }
 
 function renderInvest(){
- const m=data[latestKey()];
- const invOnly=["pension","isa","toss"];
- const iv=invOnly.reduce((s,k)=>s+Number(m[k].invest||0),0);
- const vv=invOnly.reduce((s,k)=>s+Number(m[k].value||0),0);
- const pf=vv-iv,r=iv?pf/iv:0;
- investSummary.innerHTML=`<div class="row"><span class="muted">투자계좌 원금</span><b>${money(iv)}</b></div>
+ const k=latestKey(),m=data[k];
+ const iv=investmentPrincipal(m);
+ const vv=investmentValue(m);
+ const pf=vv-iv;
+ const r=iv?pf/iv:0;
+
+ const yk=firstKeyOfYear(k);
+ const ym=yk?data[yk]:null;
+ const ytdInvValueChange=ym?changeAmount(vv,investmentValue(ym)):null;
+ const ytdInvValueRate=ym?changeRate(vv,investmentValue(ym)):null;
+ const principalAdded=ym?changeAmount(iv,investmentPrincipal(ym)):null;
+
+ investSummary.innerHTML=`
+ <div class="row"><span class="muted">투자계좌 원금</span><b>${money(iv)}</b></div>
  <div class="row" style="margin-top:10px"><span class="muted">투자계좌 평가액</span><b>${money(vv)}</b></div>
- <div class="row" style="margin-top:10px"><span class="muted">평가손익</span><b class="${pf>=0?"pos":"neg"}">${pf>=0?"+":""}${money(pf)}</b></div>
- <div class="row" style="margin-top:10px"><span class="muted">수익률</span><b class="${r>=0?"pos":"neg"}">${pct(r)}</b></div>`;
+ <div class="row" style="margin-top:10px"><span class="muted">현재 평가손익</span><b class="${pf>=0?"pos":"neg"}">${signedMoney(pf)}</b></div>
+ <div class="row" style="margin-top:10px"><span class="muted">현재 투자손익률</span><b class="${r>=0?"pos":"neg"}">${signedPct(r)}</b></div>
+ <div style="height:10px"></div>
+ <div class="metric-row metric-head"><span>연초 이후</span><span>금액</span><span>변화율</span></div>
+ <div class="metric-row">
+   <span class="muted">투자자산 평가액 변화</span>
+   <b class="${(ytdInvValueChange??0)>=0?"pos":"neg"}">${ym?signedMoney(ytdInvValueChange):"-"}</b>
+   <b class="${(ytdInvValueRate??0)>=0?"pos":"neg"}">${ym?signedPct(ytdInvValueRate):"-"}</b>
+ </div>
+ <div class="metric-row">
+   <span class="muted">추가 투자원금</span>
+   <b class="${(principalAdded??0)>=0?"pos":"neg"}">${ym?signedMoney(principalAdded):"-"}</b>
+   <span>-</span>
+ </div>`;
+
  holdingAccounts.innerHTML=["pension","isa","toss"].map(k=>renderHoldingAccount(k)).join("");
 }
 
