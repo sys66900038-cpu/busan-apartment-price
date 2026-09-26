@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1769e0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>MY ASSET V4</title>
+<title>MY ASSET V5</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;color:#172033}
@@ -105,10 +105,10 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 <section id="monthly" class="wrap hidden">
   <div class="section" style="margin-top:0">월간기록</div>
   <div class="notice">매달 한 번 각 계좌의 투자금액과 평가금액을 입력하면 총자산, 손익, 전월 대비 변화가 자동 계산됩니다.</div>
-  <div class="section">2026년 9월 업데이트</div>
+  <div class="section" id="updateTitle">다음 달 업데이트</div>
   <div id="monthlyForm"></div>
-  <button class="btn" onclick="saveSeptember()">9월 저장하기</button>
-  <button class="btn gray" onclick="resetSeptember()">9월 입력 초기화</button>
+  <button class="btn" id="updateButton" onclick="saveNextMonth()">저장하기</button>
+  <button class="btn gray" onclick="clearNextMonthForm()">입력값 지우기</button>
   <div id="saveMsg"></div>
   <div class="section">월별 기록</div>
   <div class="card" id="history"></div>
@@ -239,42 +239,60 @@ function renderTrendChart(){
  const ks=keys();
  const W=420,H=210,L=44,R=8,T=12,B=28;
  const plotW=W-L-R, plotH=H-T-B;
- const totals=ks.map(k=>total(data[k]));
- const rawMin=Math.min(...totals), rawMax=Math.max(...totals);
- const pad=Math.max((rawMax-rawMin)*0.18, 2500000);
- const minY=Math.max(0,rawMin-pad), maxY=rawMax+pad;
+
+ const series=[
+   {key:"total",label:"총자산",color:"#172033",width:3},
+   {key:"pension",label:"연금저축",color:"#1769e0",width:2},
+   {key:"isa",label:"ISA",color:"#12a594",width:2},
+   {key:"toss",label:"토스증권",color:"#8b5cf6",width:2},
+   {key:"savings",label:"청년도약계좌",color:"#f59e0b",width:2}
+ ];
+
+ const valuesBySeries = {};
+ for(const s of series){
+   valuesBySeries[s.key] = s.key==="total"
+     ? ks.map(k=>total(data[k]))
+     : ks.map(k=>Number(data[k][s.key]?.value||0));
+ }
+
+ // 모든 선이 같은 원 단위 축을 사용합니다.
+ // 따라서 총자산 선은 각 개별 계좌보다 항상 위에 위치합니다.
+ const allValues = Object.values(valuesBySeries).flat();
+ const maxRaw = Math.max(...allValues, 1);
+ const maxY = Math.ceil((maxRaw * 1.08) / 10000000) * 10000000;
+ const minY = 0;
+
  const x=i=>L+(ks.length===1?plotW/2:i*plotW/(ks.length-1));
  const y=v=>T+(maxY-v)/(maxY-minY)*plotH;
- const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
  let out="";
- for(let g=0;g<4;g++){
-   const val=minY+(maxY-minY)*(3-g)/3;
-   const yy=T+plotH*g/3;
+
+ // grid + y labels
+ const gridCount=4;
+ for(let g=0;g<=gridCount;g++){
+   const value=maxY-(maxY-minY)*(g/gridCount);
+   const yy=T+plotH*(g/gridCount);
    out+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e8edf3" stroke-width="1"/>`;
-   out+=`<text x="${L-5}" y="${yy+3}" text-anchor="end" font-size="9" fill="#8a95a5">${Math.round(val/1000000)}M</text>`;
+   out+=`<text x="${L-5}" y="${yy+3}" text-anchor="end" font-size="9" fill="#8a95a5">${Math.round(value/1000000)}M</text>`;
  }
- const series=[
-   {key:"pension",color:"#1769e0",width:2},
-   {key:"isa",color:"#12a594",width:2},
-   {key:"toss",color:"#8b5cf6",width:2},
-   {key:"savings",color:"#f59e0b",width:2},
-   {key:"total",color:"#172033",width:3}
- ];
- // account series get their own min/max normalization so movement is visible; total uses shared total scale.
+
+ // lines
  for(const s of series){
-   let vals=s.key==="total"?totals:ks.map(k=>Number(data[k][s.key]?.value||0));
-   let sy;
-   if(s.key==="total"){
-     sy=y;
-   }else{
-     const mn=Math.min(...vals), mx=Math.max(...vals), p=Math.max((mx-mn)*0.2,500000);
-     sy=v=>T+((mx+p)-v)/((mx+p)-Math.max(0,mn-p))*plotH;
-   }
-   const pts=vals.map((v,i)=>`${x(i)},${sy(v)}`).join(" ");
-   out+=`<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="round" stroke-linejoin="round" opacity="${s.key==="total"?1:.82}"/>`;
-   vals.forEach((v,i)=>out+=`<circle cx="${x(i)}" cy="${sy(v)}" r="${s.key==="total"?3:2.2}" fill="${s.color}"/>`);
+   const vals=valuesBySeries[s.key];
+   const pts=vals.map((v,i)=>`${x(i)},${y(v)}`).join(" ");
+   out+=`<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="round" stroke-linejoin="round" opacity="${s.key==="total"?1:.88}"/>`;
+   vals.forEach((v,i)=>{
+     out+=`<circle cx="${x(i)}" cy="${y(v)}" r="${s.key==="total"?3.2:2.3}" fill="${s.color}">
+       <title>${s.label} · ${ks[i]} · ${money(v)}</title>
+     </circle>`;
+   });
  }
- ks.forEach((k,i)=>out+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#7b8797">${Number(k.slice(5))}월</text>`);
+
+ // x labels
+ ks.forEach((k,i)=>{
+   out+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#7b8797">${Number(k.slice(5))}월</text>`;
+ });
+
  svg.innerHTML=out;
 }
 
@@ -383,30 +401,83 @@ function deleteHolding(account,index){
  }
 }
 
+function monthAfter(k){
+ const [y,m]=k.split("-").map(Number);
+ const d=new Date(y,m,1);
+ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+
+function labelFromKey(k){
+ const [y,m]=k.split("-").map(Number);
+ return `${y}년 ${m}월`;
+}
+
+let currentInputKey=null;
+
 function renderMonthly(){
- const s=data["2026-09"]||{label:"2026년 9월",pension:{invest:"",value:""},isa:{invest:"",value:""},toss:{invest:"",value:""},savings:{invest:"",value:""}};
+ currentInputKey=monthAfter(latestKey());
+ const saved=data[currentInputKey] || {
+   label:labelFromKey(currentInputKey),
+   pension:{invest:"",value:""},
+   isa:{invest:"",value:""},
+   toss:{invest:"",value:""},
+   savings:{invest:"",value:""}
+ };
+
+ updateTitle.textContent=`${labelFromKey(currentInputKey)} 업데이트`;
+ updateButton.textContent=`${Number(currentInputKey.slice(5))}월 저장하기`;
+
  monthlyForm.innerHTML=Object.entries(ACCOUNTS).map(([k,a])=>`<div class="card"><b>${a.name}</b>
- <label>투자금액 / 납입금액</label><input id="${k}_invest" type="number" value="${s[k]?.invest??""}">
- <label>평가금액</label><input id="${k}_value" type="number" value="${s[k]?.value??""}"></div>`).join("");
+ <label>투자금액 / 납입금액</label><input id="${k}_invest" type="number" value="${saved[k]?.invest??""}">
+ <label>평가금액</label><input id="${k}_value" type="number" value="${saved[k]?.value??""}"></div>`).join("");
+
  history.innerHTML=keys().slice().reverse().map(k=>{
    const m=data[k],pk=prevKey(k),d=pk?total(m)-total(data[pk]):null;
-   return `<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f4"><b>${m.label}</b><div style="text-align:right"><div>${money(total(m))}</div><div class="muted ${d==null?"":d>=0?"pos":"neg"}">${d==null?"":`${d>=0?"+":""}${money(d)}`}</div></div></div>`;
+   return `<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f4">
+     <b>${m.label}</b>
+     <div style="text-align:right">
+       <div>${money(total(m))}</div>
+       <div class="muted ${d==null?"":d>=0?"pos":"neg"}">
+         ${d==null?"":`${d>=0?"+":""}${money(d)}`}
+       </div>
+     </div>
+   </div>`;
  }).join("");
 }
-function saveSeptember(){
- const obj={label:"2026년 9월"};
+
+function saveNextMonth(){
+ const obj={label:labelFromKey(currentInputKey)};
+ let hasValue=false;
+
  for(const k of Object.keys(ACCOUNTS)){
-  obj[k]={invest:Number(document.getElementById(k+"_invest").value)||0,value:Number(document.getElementById(k+"_value").value)||0};
+   const invest=Number(document.getElementById(k+"_invest").value)||0;
+   const value=Number(document.getElementById(k+"_value").value)||0;
+   if(invest!==0 || value!==0) hasValue=true;
+   obj[k]={invest,value};
  }
- data["2026-09"]=obj; localStorage.setItem(MONTH_KEY,JSON.stringify(data));
- saveMsg.innerHTML='<div class="notice" style="margin-top:12px">2026년 9월 데이터가 이 브라우저에 저장되었습니다.</div>';
+
+ if(!hasValue){
+   alert("한 개 이상의 계좌 금액을 입력해주세요.");
+   return;
+ }
+
+ data[currentInputKey]=obj;
+ localStorage.setItem(MONTH_KEY,JSON.stringify(data));
+
+ const savedLabel=labelFromKey(currentInputKey);
+ saveMsg.innerHTML=`<div class="notice" style="margin-top:12px">${savedLabel} 데이터가 저장되었습니다. 다음 입력 월로 자동 이동합니다.</div>`;
+
  renderAll();
 }
-function resetSeptember(){
- if(confirm("9월 입력값을 삭제할까요?")){
-  delete data["2026-09"]; localStorage.setItem(MONTH_KEY,JSON.stringify(data)); saveMsg.innerHTML=""; renderAll();
+
+function clearNextMonthForm(){
+ for(const k of Object.keys(ACCOUNTS)){
+   document.getElementById(k+"_invest").value="";
+   document.getElementById(k+"_value").value="";
  }
+ saveMsg.innerHTML="";
 }
+
 function renderAll(){renderHome();renderAssets();renderInvest();renderMonthly()}
 renderAll();
 </script>
