@@ -69,6 +69,51 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 .chart-head{display:flex;justify-content:space-between;align-items:end;margin-bottom:8px}
 .chart-head b{font-size:15px}.chart-head span{font-size:11px;color:#7b8797}
 .chart-svg{width:100%;height:210px;display:block}
+.chart-box{position:relative}
+.chart-svg{width:100%;height:210px;display:block;overflow:visible}
+.chart-tooltip{
+  position:absolute;
+  display:none;
+  min-width:160px;
+  max-width:220px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(23,32,51,.96);
+  color:#fff;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);
+  font-size:12px;
+  line-height:1.45;
+  pointer-events:none;
+  z-index:5;
+}
+.chart-tooltip .tt-title{
+  font-size:12px;
+  font-weight:900;
+  margin-bottom:6px;
+}
+.chart-tooltip .tt-row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:4px;
+}
+.chart-tooltip .tt-row span{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:rgba(255,255,255,.92);
+}
+.chart-tooltip .tt-row i{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  display:inline-block;
+}
+.dot.total{
+  width:12px;
+  border-radius:3px;
+  background:rgba(23,32,51,.35);
+}
 .legend{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:10px}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#566274}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
@@ -221,7 +266,21 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
   <div class="card">
     <div class="chart-wrap">
       <div class="chart-head"><b>월별 자산 변화</b><span>총자산 + 계좌별 추이</span></div>
-      <svg id="trendChart" class="chart-svg" viewBox="0 0 420 210" preserveAspectRatio="none"></svg>
+      <div class="chart-box" id="trendChartBox">
+
+  <svg
+    id="trendChart"
+    class="chart-svg"
+    viewBox="0 0 420 210"
+    preserveAspectRatio="none">
+  </svg>
+
+  <div
+    id="trendTooltip"
+    class="chart-tooltip">
+  </div>
+
+</div>
       <div class="legend">
         <span class="legend-item"><i class="dot total"></i>총자산</span>
         <span class="legend-item"><i class="dot pension"></i>연금저축</span>
@@ -1258,65 +1317,225 @@ function confirmCurrentMonthAsset(){
 }
 
 function renderTrendChart(){
- const svg=document.getElementById("trendChart");
- const ks=validKeys();
- const W=420,H=210,L=44,R=8,T=12,B=28;
- const plotW=W-L-R, plotH=H-T-B;
+  const svg = document.getElementById("trendChart");
+  const box = document.getElementById("trendChartBox");
+  const tooltip = document.getElementById("trendTooltip");
 
- const series=[
-   {key:"total",label:"총자산",color:"#172033",width:3},
-   {key:"pension",label:"연금저축",color:"#1769e0",width:2},
-   {key:"isa",label:"ISA",color:"#12a594",width:2},
-   {key:"toss",label:"토스증권",color:"#8b5cf6",width:2},
-   {key:"savings",label:"청년도약계좌",color:"#f59e0b",width:2}
- ];
+  const ks = validKeys();
+  if(!ks.length){
+    svg.innerHTML = "";
+    if(tooltip) tooltip.style.display = "none";
+    return;
+  }
 
- const valuesBySeries = {};
- for(const s of series){
-   valuesBySeries[s.key] = s.key==="total"
-     ? ks.map(k=>total(data[k]))
-     : ks.map(k=>Number(data[k][s.key]?.value||0));
- }
+  const W = 420, H = 210, L = 44, R = 8, T = 12, B = 28;
+  const plotW = W - L - R;
+  const plotH = H - T - B;
 
- // 모든 선이 같은 원 단위 축을 사용합니다.
- // 따라서 총자산 선은 각 개별 계좌보다 항상 위에 위치합니다.
- const allValues = Object.values(valuesBySeries).flat();
- const maxRaw = Math.max(...allValues, 1);
- const maxY = Math.ceil((maxRaw * 1.08) / 10000000) * 10000000;
- const minY = 0;
+  const totalVals = ks.map(k => total(data[k]));
 
- const x=i=>L+(ks.length===1?plotW/2:i*plotW/(ks.length-1));
- const y=v=>T+(maxY-v)/(maxY-minY)*plotH;
+  const lineSeries = [
+    {key:"pension", label:"연금저축", color:"#1769e0", width:2},
+    {key:"isa",     label:"ISA",     color:"#12a594", width:2},
+    {key:"toss",    label:"토스증권", color:"#8b5cf6", width:2},
+    {key:"savings", label:"청년도약계좌", color:"#f59e0b", width:2}
+  ];
 
- let out="";
+  const valuesBySeries = {
+    total: totalVals
+  };
 
- // grid + y labels
- const gridCount=4;
- for(let g=0;g<=gridCount;g++){
-   const value=maxY-(maxY-minY)*(g/gridCount);
-   const yy=T+plotH*(g/gridCount);
-   out+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e8edf3" stroke-width="1"/>`;
-   out+=`<text x="${L-5}" y="${yy+3}" text-anchor="end" font-size="9" fill="#8a95a5">${Math.round(value/1000000)}M</text>`;
- }
+  for(const s of lineSeries){
+    valuesBySeries[s.key] = ks.map(k => Number(data[k][s.key]?.value || 0));
+  }
 
- // lines
- for(const s of series){
-   const vals=valuesBySeries[s.key];
-   const pts=vals.map((v,i)=>`${x(i)},${y(v)}`).join(" ");
-   out+=`<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="round" stroke-linejoin="round" opacity="${s.key==="total"?1:.88}"/>`;
-   vals.forEach((v,i)=>{
-     out+=`<circle cx="${x(i)}" cy="${y(v)}" r="${s.key==="total"?3.2:2.3}" fill="${s.color}">
-       <title>${s.label} · ${ks[i]} · ${money(v)}</title>
-     </circle>`;
-   });
- }
+  const allValues = [
+    ...totalVals,
+    ...lineSeries.flatMap(s => valuesBySeries[s.key])
+  ];
 
- // x labels
- ks.forEach((k,i)=>{
-   out+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#7b8797">${Number(k.slice(5))}월</text>`;
- });
+  const maxRaw = Math.max(...allValues, 1);
+  const maxY = Math.ceil((maxRaw * 1.08) / 10000000) * 10000000;
+  const minY = 0;
 
- svg.innerHTML=out;
+  const x = i => L + (ks.length === 1 ? plotW / 2 : i * plotW / (ks.length - 1));
+  const y = v => T + (maxY - v) / (maxY - minY) * plotH;
+
+  let out = "";
+
+  // grid + y labels
+  const gridCount = 4;
+  for(let g = 0; g <= gridCount; g++){
+    const value = maxY - (maxY - minY) * (g / gridCount);
+    const yy = T + plotH * (g / gridCount);
+
+    out += `<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e8edf3" stroke-width="1"/>`;
+    out += `<text x="${L-5}" y="${yy+3}" text-anchor="end" font-size="9" fill="#8a95a5">${Math.round(value/1000000)}M</text>`;
+  }
+
+  // total bars (behind)
+  const barWidth = ks.length === 1 ? 28 : Math.min(26, (plotW / ks.length) * 0.5);
+  totalVals.forEach((v, i) => {
+    const xx = x(i) - barWidth / 2;
+    const yy = y(v);
+    const hh = H - B - yy;
+
+    out += `
+      <rect
+        x="${xx}"
+        y="${yy}"
+        width="${barWidth}"
+        height="${Math.max(hh, 0)}"
+        rx="7"
+        fill="rgba(23,32,51,.14)"
+      />
+    `;
+  });
+
+  // hover guide line
+  out += `
+    <line
+      id="trendGuide"
+      x1="${L}"
+      y1="${T}"
+      x2="${L}"
+      y2="${H-B}"
+      stroke="#94a3b8"
+      stroke-width="1"
+      stroke-dasharray="4 4"
+      style="display:none"
+    />
+  `;
+
+  // account lines
+  for(const s of lineSeries){
+    const vals = valuesBySeries[s.key];
+    const pts = vals.map((v,i) => `${x(i)},${y(v)}`).join(" ");
+
+    out += `
+      <polyline
+        points="${pts}"
+        fill="none"
+        stroke="${s.color}"
+        stroke-width="${s.width}"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        opacity=".95"
+      />
+    `;
+
+    vals.forEach((v,i) => {
+      out += `
+        <circle
+          cx="${x(i)}"
+          cy="${y(v)}"
+          r="2.8"
+          fill="${s.color}"
+        />
+      `;
+    });
+  }
+
+  // total top points only
+  totalVals.forEach((v,i) => {
+    out += `
+      <circle
+        cx="${x(i)}"
+        cy="${y(v)}"
+        r="2.6"
+        fill="#172033"
+        opacity=".9"
+      />
+    `;
+  });
+
+  // x labels
+  ks.forEach((k, i) => {
+    out += `<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#7b8797">${Number(k.slice(5))}월</text>`;
+  });
+
+  // invisible hover columns
+  ks.forEach((k, i) => {
+    const left = i === 0 ? L : (x(i-1) + x(i)) / 2;
+    const right = i === ks.length - 1 ? (W - R) : (x(i) + x(i+1)) / 2;
+
+    out += `
+      <rect
+        class="hover-col"
+        data-i="${i}"
+        x="${left}"
+        y="${T}"
+        width="${right-left}"
+        height="${plotH}"
+        fill="transparent"
+        style="cursor:pointer"
+      />
+    `;
+  });
+
+  svg.innerHTML = out;
+
+  const guide = document.getElementById("trendGuide");
+
+  function getMonthLabel(key){
+    return data[key]?.label || key;
+  }
+
+  function tooltipHtml(i){
+    const rows = [
+      {label:"총자산", color:"rgba(23,32,51,.7)", value:totalVals[i]},
+      ...lineSeries.map(s => ({
+        label:s.label,
+        color:s.color,
+        value:valuesBySeries[s.key][i]
+      }))
+    ];
+
+    return `
+      <div class="tt-title">${getMonthLabel(ks[i])}</div>
+      ${rows.map(r => `
+        <div class="tt-row">
+          <span><i style="background:${r.color}"></i>${r.label}</span>
+          <b>${money(r.value)}</b>
+        </div>
+      `).join("")}
+    `;
+  }
+
+  function showTooltip(i){
+    tooltip.innerHTML = tooltipHtml(i);
+    tooltip.style.display = "block";
+
+    guide.setAttribute("x1", x(i));
+    guide.setAttribute("x2", x(i));
+    guide.style.display = "block";
+
+    let leftPx = (x(i) / W) * box.clientWidth + 10;
+
+    requestAnimationFrame(() => {
+      const maxLeft = box.clientWidth - tooltip.offsetWidth - 6;
+      if(leftPx > maxLeft) leftPx = maxLeft;
+      if(leftPx < 6) leftPx = 6;
+
+      tooltip.style.left = leftPx + "px";
+      tooltip.style.top = "8px";
+    });
+  }
+
+  function hideTooltip(){
+    tooltip.style.display = "none";
+    guide.style.display = "none";
+  }
+
+  svg.querySelectorAll(".hover-col").forEach(el => {
+    const i = Number(el.dataset.i);
+
+    el.addEventListener("mouseenter", () => showTooltip(i));
+    el.addEventListener("mousemove", () => showTooltip(i));
+    el.addEventListener("click", () => showTooltip(i));
+  });
+
+  box.addEventListener("mouseleave", hideTooltip);
 }
 
 function renderAssets(){
