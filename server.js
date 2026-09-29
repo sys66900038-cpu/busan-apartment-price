@@ -11,6 +11,13 @@ const __dirname = path.dirname(__filename);
 app.use(express.json());
 app.use(express.static(__dirname));
 
+
+/*
+==================================================
+시장지수
+==================================================
+*/
+
 const SYMBOLS = {
   sp500: "^GSPC",
   nasdaq100: "^NDX",
@@ -22,187 +29,887 @@ let marketCache = {
   payload: null
 };
 
+
+/*
+==================================================
+주식 현재가 캐시
+==================================================
+*/
+
+const quoteCache = new Map();
+
+const QUOTE_CACHE_MS =
+  60 * 1000;
+
+
+/*
+==================================================
+공통 함수
+==================================================
+*/
+
 function monthKeyFromUnix(ts) {
-  const d = new Date(ts * 1000);
+
+  const d =
+    new Date(ts * 1000);
 
   return (
     d.getUTCFullYear() +
     "-" +
-    String(d.getUTCMonth() + 1).padStart(2, "0")
+    String(
+      d.getUTCMonth() + 1
+    ).padStart(2, "0")
   );
 }
 
-async function fetchYahooDaily(symbol) {
-  const now = Math.floor(Date.now() / 1000);
 
-  const start = Math.floor(
-    Date.UTC(2025, 11, 1) / 1000
-  );
+/*
+==================================================
+Yahoo 월별 시장 데이터
+==================================================
+*/
+
+async function fetchYahooDaily(symbol) {
+
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const start =
+    Math.floor(
+      Date.UTC(
+        2025,
+        11,
+        1
+      ) / 1000
+    );
 
   const url =
     "https://query1.finance.yahoo.com/v8/finance/chart/" +
     encodeURIComponent(symbol) +
-    "?period1=" + start +
-    "&period2=" + now +
+    "?period1=" +
+    start +
+    "&period2=" +
+    now +
     "&interval=1d" +
     "&events=history" +
     "&includeAdjustedClose=true";
 
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0",
-      "Accept": "application/json"
-    }
-  });
+
+  const response =
+    await fetch(
+      url,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0",
+
+          "Accept":
+            "application/json"
+        }
+      }
+    );
+
 
   if (!response.ok) {
+
     throw new Error(
       `Yahoo request failed: ${symbol} ${response.status}`
     );
+
   }
 
-  const json = await response.json();
+
+  const json =
+    await response.json();
+
 
   const result =
     json?.chart?.result?.[0];
 
+
   if (!result) {
+
     throw new Error(
       `시장 데이터를 찾을 수 없습니다: ${symbol}`
     );
+
   }
+
 
   const timestamps =
     result.timestamp || [];
 
+
   const closes =
-    result.indicators?.quote?.[0]?.close || [];
+    result
+      .indicators
+      ?.quote
+      ?.[0]
+      ?.close || [];
+
 
   const monthly = {};
 
-  for (let i = 0; i < timestamps.length; i++) {
-    const close = closes[i];
+
+  for (
+    let i = 0;
+    i < timestamps.length;
+    i++
+  ) {
+
+    const close =
+      closes[i];
+
 
     if (
       close == null ||
-      !Number.isFinite(Number(close))
+      !Number.isFinite(
+        Number(close)
+      )
     ) {
+
       continue;
+
     }
 
-    const key =
-      monthKeyFromUnix(timestamps[i]);
 
-    monthly[key] = Number(close);
+    const key =
+      monthKeyFromUnix(
+        timestamps[i]
+      );
+
+
+    monthly[key] =
+      Number(close);
+
   }
 
+
   return monthly;
+
 }
+
+
+/*
+==================================================
+Yahoo 현재가 조회
+==================================================
+*/
+
+async function fetchYahooQuote(symbol) {
+
+  /*
+  1분 캐시
+  */
+
+  const cached =
+    quoteCache.get(symbol);
+
+
+  if (
+    cached &&
+    Date.now() <
+      cached.expiresAt
+  ) {
+
+    return cached.data;
+
+  }
+
+
+  const url =
+    "https://query1.finance.yahoo.com/v8/finance/chart/" +
+    encodeURIComponent(symbol) +
+    "?range=1d" +
+    "&interval=1m";
+
+
+  const response =
+    await fetch(
+      url,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0",
+
+          "Accept":
+            "application/json"
+        }
+      }
+    );
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      `${symbol}: ${response.status}`
+    );
+
+  }
+
+
+  const json =
+    await response.json();
+
+
+  const result =
+    json?.chart?.result?.[0];
+
+
+  if (!result) {
+
+    throw new Error(
+      `${symbol}: 데이터 없음`
+    );
+
+  }
+
+
+  const meta =
+    result.meta || {};
+
+
+  const timestamps =
+    result.timestamp || [];
+
+
+  const closes =
+    result
+      .indicators
+      ?.quote
+      ?.[0]
+      ?.close || [];
+
+
+  /*
+  마지막 유효 가격 찾기
+  */
+
+  let lastPrice = null;
+  let lastTimestamp = null;
+
+
+  for (
+    let i =
+      closes.length - 1;
+    i >= 0;
+    i--
+  ) {
+
+    const value =
+      Number(closes[i]);
+
+
+    if (
+      Number.isFinite(value)
+    ) {
+
+      lastPrice =
+        value;
+
+      lastTimestamp =
+        timestamps[i] || null;
+
+      break;
+
+    }
+
+  }
+
+
+  /*
+  장이 닫혀 있거나
+  1분 데이터가 없으면
+  regularMarketPrice 사용
+  */
+
+  if (
+    lastPrice == null &&
+    Number.isFinite(
+      Number(
+        meta.regularMarketPrice
+      )
+    )
+  ) {
+
+    lastPrice =
+      Number(
+        meta.regularMarketPrice
+      );
+
+  }
+
+
+  if (lastPrice == null) {
+
+    throw new Error(
+      `${symbol}: 현재가 없음`
+    );
+
+  }
+
+
+  const data = {
+
+    symbol:
+
+      meta.symbol ||
+      symbol,
+
+
+    price:
+
+      lastPrice,
+
+
+    previousClose:
+
+      Number.isFinite(
+        Number(
+          meta.chartPreviousClose
+        )
+      )
+        ?
+        Number(
+          meta.chartPreviousClose
+        )
+        :
+        null,
+
+
+    currency:
+
+      meta.currency ||
+      null,
+
+
+    exchange:
+
+      meta.exchangeName ||
+      null,
+
+
+    marketState:
+
+      meta.marketState ||
+      null,
+
+
+    timestamp:
+
+      lastTimestamp ||
+      Math.floor(
+        Date.now() / 1000
+      )
+
+  };
+
+
+  quoteCache.set(
+    symbol,
+    {
+
+      expiresAt:
+        Date.now() +
+        QUOTE_CACHE_MS,
+
+      data
+
+    }
+  );
+
+
+  return data;
+
+}
+
+
+/*
+==================================================
+시장지수 API
+==================================================
+*/
 
 app.get(
   "/api/market-history",
+
   async (req, res) => {
+
     try {
+
+      /*
+      6시간 캐시
+      */
+
       if (
         marketCache.payload &&
-        Date.now() < marketCache.expiresAt
+        Date.now() <
+          marketCache.expiresAt
       ) {
+
         return res.json(
           marketCache.payload
         );
+
       }
+
 
       const [
         sp500,
         nasdaq100,
         kospi
-      ] = await Promise.all([
-        fetchYahooDaily(
-          SYMBOLS.sp500
-        ),
-        fetchYahooDaily(
-          SYMBOLS.nasdaq100
-        ),
-        fetchYahooDaily(
-          SYMBOLS.kospi
-        )
-      ]);
+      ] =
+
+        await Promise.all([
+
+          fetchYahooDaily(
+            SYMBOLS.sp500
+          ),
+
+          fetchYahooDaily(
+            SYMBOLS.nasdaq100
+          ),
+
+          fetchYahooDaily(
+            SYMBOLS.kospi
+          )
+
+        ]);
+
 
       const allKeys = [
+
         ...new Set([
-          ...Object.keys(sp500),
-          ...Object.keys(nasdaq100),
-          ...Object.keys(kospi)
+
+          ...Object.keys(
+            sp500
+          ),
+
+          ...Object.keys(
+            nasdaq100
+          ),
+
+          ...Object.keys(
+            kospi
+          )
+
         ])
+
       ].sort();
+
 
       const months = {};
 
-      for (const key of allKeys) {
+
+      for (
+        const key
+        of allKeys
+      ) {
+
         if (
-          !key.startsWith("2026-")
+          !key.startsWith(
+            "2026-"
+          )
         ) {
+
           continue;
+
         }
 
+
         months[key] = {
+
           sp500:
-            sp500[key] ?? null,
+            sp500[key] ??
+            null,
+
 
           nasdaq100:
-            nasdaq100[key] ?? null,
+            nasdaq100[key] ??
+            null,
+
 
           kospi:
-            kospi[key] ?? null
+            kospi[key] ??
+            null
+
         };
+
       }
 
+
       const payload = {
+
         source:
           "Yahoo Finance chart data",
 
         updatedAt:
-          new Date().toISOString(),
+          new Date()
+            .toISOString(),
 
         months
+
       };
+
 
       marketCache = {
+
         expiresAt:
+
           Date.now() +
-          6 * 60 * 60 * 1000,
+          6 *
+          60 *
+          60 *
+          1000,
+
 
         payload
+
       };
 
-      res.json(payload);
+
+      res.json(
+        payload
+      );
+
     }
 
     catch (error) {
+
       console.error(
         "market-history error:",
         error
       );
 
-      res.status(502).json({
-        error:
-          "시장지수 데이터를 불러오지 못했습니다."
-      });
+
+      res
+        .status(502)
+        .json({
+
+          error:
+            "시장지수 데이터를 불러오지 못했습니다."
+
+        });
+
     }
+
   }
 );
 
-app.use((req, res) => {
-  res.sendFile(
-    path.join(
-      __dirname,
-      "index.html"
-    )
-  );
-});
 
-app.listen(PORT, () => {
-  console.log(
-    `MY ASSET server running on port ${PORT}`
-  );
-});
+/*
+==================================================
+개별 종목 현재가 API
+
+예:
+ /api/quote?symbol=NVDA
+
+==================================================
+*/
+
+app.get(
+  "/api/quote",
+
+  async (req, res) => {
+
+    const symbol =
+      String(
+        req.query.symbol ||
+        ""
+      )
+      .trim();
+
+
+    if (!symbol) {
+
+      return res
+        .status(400)
+        .json({
+
+          error:
+            "symbol이 필요합니다."
+
+        });
+
+    }
+
+
+    try {
+
+      const data =
+        await fetchYahooQuote(
+          symbol
+        );
+
+
+      res.json({
+
+        source:
+          "Yahoo Finance",
+
+        updatedAt:
+          new Date()
+            .toISOString(),
+
+        ...data
+
+      });
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "quote error:",
+        error
+      );
+
+
+      res
+        .status(502)
+        .json({
+
+          error:
+            "현재가를 불러오지 못했습니다.",
+
+          symbol
+
+        });
+
+    }
+
+  }
+);
+
+
+/*
+==================================================
+여러 종목 한 번에 조회
+
+예:
+ /api/quotes?symbols=NVDA,META,QQQM
+
+==================================================
+*/
+
+app.get(
+  "/api/quotes",
+
+  async (req, res) => {
+
+    const raw =
+      String(
+        req.query.symbols ||
+        ""
+      );
+
+
+    const symbols =
+      raw
+        .split(",")
+        .map(
+          x =>
+            x.trim()
+        )
+        .filter(Boolean);
+
+
+    if (
+      symbols.length === 0
+    ) {
+
+      return res
+        .status(400)
+        .json({
+
+          error:
+            "symbols가 필요합니다."
+
+        });
+
+    }
+
+
+    /*
+    너무 많은 요청 방지
+    */
+
+    if (
+      symbols.length > 50
+    ) {
+
+      return res
+        .status(400)
+        .json({
+
+          error:
+            "한 번에 최대 50개까지 조회할 수 있습니다."
+
+        });
+
+    }
+
+
+    const unique = [
+      ...new Set(
+        symbols
+      )
+    ];
+
+
+    const results =
+      await Promise.all(
+
+        unique.map(
+          async symbol => {
+
+            try {
+
+              return {
+
+                ok: true,
+
+                ...await fetchYahooQuote(
+                  symbol
+                )
+
+              };
+
+            }
+
+            catch (error) {
+
+              return {
+
+                ok: false,
+
+                symbol,
+
+                error:
+                  error.message
+
+              };
+
+            }
+
+          }
+        )
+
+      );
+
+
+    res.json({
+
+      source:
+        "Yahoo Finance",
+
+      updatedAt:
+        new Date()
+          .toISOString(),
+
+      items:
+        results
+
+    });
+
+  }
+);
+
+
+/*
+==================================================
+USD / KRW 환율
+
+Yahoo ticker:
+KRW=X
+
+==================================================
+*/
+
+app.get(
+  "/api/usdkrw",
+
+  async (req, res) => {
+
+    try {
+
+      const quote =
+        await fetchYahooQuote(
+          "KRW=X"
+        );
+
+
+      res.json({
+
+        source:
+          "Yahoo Finance",
+
+        updatedAt:
+          new Date()
+            .toISOString(),
+
+        rate:
+          quote.price
+
+      });
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "usdkrw error:",
+        error
+      );
+
+
+      res
+        .status(502)
+        .json({
+
+          error:
+            "환율을 불러오지 못했습니다."
+
+        });
+
+    }
+
+  }
+);
+
+
+/*
+==================================================
+메인 페이지
+==================================================
+*/
+
+app.use(
+  (req, res) => {
+
+    res.sendFile(
+
+      path.join(
+        __dirname,
+        "index.html"
+      )
+
+    );
+
+  }
+);
+
+
+app.listen(
+  PORT,
+
+  () => {
+
+    console.log(
+      `MY ASSET server running on port ${PORT}`
+    );
+
+  }
+);
