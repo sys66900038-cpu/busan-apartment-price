@@ -365,25 +365,47 @@ const DEFAULT_HOLDINGS = {
   {name:"삼성전기",qty:1,avg:1790000,current:1405000,value:1405000},
   {name:"예수금",qty:null,avg:null,current:null,value:1057236}
  ],
- toss:[
-  {name:"QQQM",qty:20,avg:397118,current:407188,value:8143760},
-  {name:"SPYM",qty:16,avg:123969,current:125013,value:2000208},
-  {name:"알파벳",qty:10,avg:503492,current:478398,value:4783980},
-  {name:"엔비디아",qty:12,avg:290687,current:300284,value:3603408},
-  {name:"ASML",qty:1,avg:2873556,current:2341209,value:2341209},
-  {name:"메타",qty:2,avg:820700,current:797841,value:1595682},
-  {name:"스페이스X",qty:1,avg:160770,current:195312,value:195312},
-  {name:"QLD",qty:32,avg:128010,current:124461,value:3982752},
-  {name:"CONL",qty:157,avg:13290,current:7798,value:1224286},
-  {name:"ETHU",qty:48,avg:39269,current:35501,value:1704048},
-  {name:"달러",qty:null,avg:null,current:null,value:1135959}
- ]
+toss:[
+  {name:"QQQM",ticker:"QQQM",qty:20,avg:397118,current:407188,value:8143760},
+  {name:"SPYM",ticker:"SPYM",qty:16,avg:123969,current:125013,value:2000208},
+  {name:"알파벳",ticker:"GOOGL",qty:10,avg:503492,current:478398,value:4783980},
+  {name:"엔비디아",ticker:"NVDA",qty:12,avg:290687,current:300284,value:3603408},
+  {name:"ASML",ticker:"ASML",qty:1,avg:2873556,current:2341209,value:2341209},
+  {name:"메타",ticker:"META",qty:2,avg:820700,current:797841,value:1595682},
+  {name:"스페이스X",ticker:"",qty:1,avg:160770,current:195312,value:195312},
+  {name:"QLD",ticker:"QLD",qty:32,avg:128010,current:124461,value:3982752},
+  {name:"CONL",ticker:"CONL",qty:157,avg:13290,current:7798,value:1224286},
+  {name:"ETHU",ticker:"ETHU",qty:48,avg:39269,current:35501,value:1704048},
+  {name:"달러",ticker:"",qty:null,avg:null,current:null,value:1135959}
+]
 };
 
 const MONTH_KEY="my_asset_v4_monthly";
 const HOLD_KEY="my_asset_v4_holdings";
 let data=JSON.parse(localStorage.getItem(MONTH_KEY)||"null") || structuredClone(BASE);
 let holdings=JSON.parse(localStorage.getItem(HOLD_KEY)||"null") || structuredClone(DEFAULT_HOLDINGS);
+  const TICKER_MAP = {
+  "QQQM":"QQQM",
+  "SPYM":"SPYM",
+  "알파벳":"GOOGL",
+  "엔비디아":"NVDA",
+  "ASML":"ASML",
+  "메타":"META",
+  "QLD":"QLD",
+  "CONL":"CONL",
+  "ETHU":"ETHU"
+};
+
+for(const h of holdings.toss || []){
+  if(!h.ticker && TICKER_MAP[h.name]){
+    h.ticker=TICKER_MAP[h.name];
+  }
+}
+
+localStorage.setItem(
+  HOLD_KEY,
+  JSON.stringify(holdings)
+);
 
 function money(n){return Math.round(Number(n||0)).toLocaleString("ko-KR")+"원"}
 function pctFromHolding(h){
@@ -1053,10 +1075,14 @@ function renderHoldingAccount(k){
  return `<div class="account-block">
  <div class="account-title">
    <b>${a.name}</b>
-   <div style="display:flex;gap:6px">
-     <button class="btn gray small" onclick="manualSync('${k}')">합계 반영</button>
-     <button class="btn small" onclick="openHoldingModal('${k}',-1)">+ 종목 추가</button>
-   </div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+  ${k==="toss"
+    ? `<button class="btn gray small" onclick="refreshTossPrices()">↻ 현재가</button>`
+    : ""
+  }
+  <button class="btn gray small" onclick="manualSync('${k}')">합계 반영</button>
+  <button class="btn small" onclick="openHoldingModal('${k}',-1)">+ 종목 추가</button>
+</div>
  </div>
  <div class="card">
    <div class="row" style="padding-bottom:10px;border-bottom:1px solid #edf0f4">
@@ -1077,7 +1103,186 @@ function holdingRow(account,h,i){
  </div>`;
 }
 
+async function refreshTossPrices(){
 
+  const buttonEventTarget =
+    event?.target || null;
+
+  if(buttonEventTarget){
+    buttonEventTarget.disabled=true;
+    buttonEventTarget.textContent="불러오는 중...";
+  }
+
+  try{
+
+    const items =
+      (holdings.toss || [])
+      .filter(h=>h.ticker);
+
+    if(!items.length){
+      alert("자동조회할 티커가 없습니다.");
+      return;
+    }
+
+    const symbols=
+      items
+      .map(h=>h.ticker)
+      .join(",");
+
+    const [
+      quoteResponse,
+      fxResponse
+    ]=await Promise.all([
+      fetch(
+        "/api/quotes?symbols="+
+        encodeURIComponent(symbols)
+      ),
+      fetch("/api/usdkrw")
+    ]);
+
+    if(
+      !quoteResponse.ok ||
+      !fxResponse.ok
+    ){
+      throw new Error(
+        "서버에서 시세를 불러오지 못했습니다."
+      );
+    }
+
+    const quoteData=
+      await quoteResponse.json();
+
+    const fxData=
+      await fxResponse.json();
+
+    const usdkrw=
+      Number(fxData.rate);
+
+    if(
+      !Number.isFinite(usdkrw) ||
+      usdkrw<=0
+    ){
+      throw new Error(
+        "원달러 환율을 확인할 수 없습니다."
+      );
+    }
+
+    const priceMap={};
+
+    for(
+      const item
+      of quoteData.items || []
+    ){
+
+      if(
+        item.ok &&
+        Number.isFinite(
+          Number(item.price)
+        )
+      ){
+
+        priceMap[item.symbol]=
+          Number(item.price);
+
+      }
+
+    }
+
+    let updated=0;
+
+    for(
+      const h
+      of holdings.toss || []
+    ){
+
+      if(
+        !h.ticker ||
+        !priceMap[h.ticker]
+      ){
+        continue;
+      }
+
+      const usdPrice=
+        priceMap[h.ticker];
+
+      const krwPrice=
+        usdPrice*usdkrw;
+
+      h.current=
+        Math.round(krwPrice);
+
+      if(
+        h.qty!=null &&
+        Number.isFinite(
+          Number(h.qty)
+        )
+      ){
+
+        h.value=
+          Math.round(
+            Number(h.qty)*
+            krwPrice
+          );
+
+      }
+
+      updated++;
+
+    }
+
+    localStorage.setItem(
+      HOLD_KEY,
+      JSON.stringify(holdings)
+    );
+
+    syncHoldingAccountToLatestMonth(
+      "toss"
+    );
+
+    renderAll();
+
+    const msg=
+      document.getElementById(
+        "syncMsg"
+      );
+
+    if(msg){
+
+      msg.innerHTML=`
+        <div class="notice" style="margin-bottom:12px">
+          토스증권 ${updated}개 종목의 현재가를 갱신했습니다.<br>
+          적용 환율: 1달러 = ${Math.round(usdkrw).toLocaleString("ko-KR")}원
+        </div>
+      `;
+
+    }
+
+  }
+
+  catch(error){
+
+    console.error(
+      "refreshTossPrices:",
+      error
+    );
+
+    alert(
+      "현재가 갱신에 실패했습니다.\n"+
+      error.message
+    );
+
+  }
+
+  finally{
+
+    if(buttonEventTarget){
+      buttonEventTarget.disabled=false;
+      buttonEventTarget.textContent="↻ 현재가";
+    }
+
+  }
+
+}
 function manualSync(account){
  syncHoldingAccountToLatestMonth(account);
  renderAll();
