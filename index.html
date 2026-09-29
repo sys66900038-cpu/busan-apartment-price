@@ -1073,115 +1073,210 @@ function saveGoal(){
 
 function confirmCurrentMonthAsset(){
 
-  const month=
+  const month =
     currentMonthKey();
 
-  const latest=
+  const latest =
     latestKey();
 
-
-  if(!latest || !data[latest]){
+  if(
+    !latest ||
+    !data[latest]
+  ){
 
     alert(
       "기준이 될 기존 자산 기록이 없습니다."
     );
 
     return;
-
   }
 
 
-  const old=
+  /*
+  이미 이번 달 기록이 있으면
+  이번 달 값을 기준으로,
+  없으면 직전 월 값을 기준으로 사용
+  */
+
+  const base =
+    data[month] ||
     data[latest];
 
 
-  const pensionValue=
-    holdingValueTotal("pension");
+  /*
+  투자계좌 평가금액은
+  현재 투자화면의 실시간 보유종목 합계
+  */
 
-  const isaValue=
-    holdingValueTotal("isa");
+  const pensionValue =
+    holdingValueTotal(
+      "pension"
+    );
 
-  const tossValue=
-    holdingValueTotal("toss");
+  const isaValue =
+    holdingValueTotal(
+      "isa"
+    );
 
-
-  const youthValue=
-    old?.youth?.value || 0;
-
-
-  const totalValue=
-    pensionValue+
-    isaValue+
-    tossValue+
-    youthValue;
-
-
-  modalTitle.textContent=
-    "이번 달 자산 미리보기";
+  const tossValue =
+    holdingValueTotal(
+      "toss"
+    );
 
 
-  modalContent.innerHTML=`
+  modalTitle.textContent =
+    "이번 달 자산 확정";
+
+
+  modalContent.innerHTML = `
 
     <div class="notice">
-      아직 저장되지 않습니다.
-      아래 금액을 확인한 뒤
-      최종 확정 버튼을 눌러주세요.
+      아직 저장되지 않습니다.<br>
+      각 금액을 확인하거나 수정한 뒤
+      최종 확정해주세요.
     </div>
 
 
-    <div class="card" style="margin-top:12px">
+    <div
+      style="
+        margin-top:14px;
+        font-size:18px;
+        font-weight:900;
+      "
+    >
+      ${month.replace("-", "년 ")}월
+    </div>
 
-      <div class="row">
-        <span class="muted">확정 월</span>
-        <b>${month}</b>
-      </div>
 
-      <div class="row">
-        <span class="muted">연금저축</span>
-        <b>${money(pensionValue)}</b>
-      </div>
+    <!-- 연금저축 -->
 
-      <div class="row">
-        <span class="muted">ISA</span>
-        <b>${money(isaValue)}</b>
-      </div>
+    <div
+      class="card"
+      style="margin-top:12px"
+    >
 
-      <div class="row">
-        <span class="muted">토스증권</span>
-        <b>${money(tossValue)}</b>
-      </div>
+      <b>연금저축</b>
 
-      <div class="row">
-        <span class="muted">청년도약계좌</span>
-        <b>${money(youthValue)}</b>
-      </div>
+      <label>
+        투자원금
+      </label>
 
-      <div
-        class="row"
-        style="
-          margin-top:10px;
-          padding-top:10px;
-          border-top:1px solid #e8edf3
-        "
+      <input
+        id="confirmPensionInvest"
+        type="number"
+        value="${base.pension?.invest || 0}"
       >
-        <span class="muted">총자산</span>
-        <b>${money(totalValue)}</b>
-      </div>
+
+      <label>
+        평가금액
+      </label>
+
+      <input
+        id="confirmPensionValue"
+        type="number"
+        value="${Math.round(pensionValue)}"
+      >
+
+    </div>
+
+
+    <!-- ISA -->
+
+    <div class="card">
+
+      <b>ISA</b>
+
+      <label>
+        투자원금
+      </label>
+
+      <input
+        id="confirmIsaInvest"
+        type="number"
+        value="${base.isa?.invest || 0}"
+      >
+
+      <label>
+        평가금액
+      </label>
+
+      <input
+        id="confirmIsaValue"
+        type="number"
+        value="${Math.round(isaValue)}"
+      >
+
+    </div>
+
+
+    <!-- 토스증권 -->
+
+    <div class="card">
+
+      <b>토스증권</b>
+
+      <label>
+        투자원금
+      </label>
+
+      <input
+        id="confirmTossInvest"
+        type="number"
+        value="${base.toss?.invest || 0}"
+      >
+
+      <label>
+        평가금액
+      </label>
+
+      <input
+        id="confirmTossValue"
+        type="number"
+        value="${Math.round(tossValue)}"
+      >
+
+    </div>
+
+
+    <!-- 청년도약계좌 -->
+
+    <div class="card">
+
+      <b>청년도약계좌</b>
+
+      <label>
+        납입원금
+      </label>
+
+      <input
+        id="confirmSavingsInvest"
+        type="number"
+        value="${base.savings?.invest || 0}"
+      >
+
+      <label>
+        현재금액
+      </label>
+
+      <input
+        id="confirmSavingsValue"
+        type="number"
+        value="${base.savings?.value || 0}"
+      >
 
     </div>
 
 
     <button
       class="btn"
-      style="margin-top:14px"
       onclick="saveCurrentMonthAsset()"
     >
       최종 확정
     </button>
 
+
     <button
       class="btn gray"
-      style="margin-top:8px"
       onclick="closeModal()"
     >
       취소
@@ -1197,57 +1292,198 @@ function confirmCurrentMonthAsset(){
 }
   function saveCurrentMonthAsset(){
 
-  const month=
+  const month =
     currentMonthKey();
 
-  const latest=
-    latestKey();
+
+  function inputNumber(id){
+
+    const el =
+      document.getElementById(id);
+
+    if(!el){
+      return NaN;
+    }
+
+    return Number(
+      el.value
+    );
+
+  }
 
 
-  if(!latest || !data[latest]){
+  const pensionInvest =
+    inputNumber(
+      "confirmPensionInvest"
+    );
+
+  const pensionValue =
+    inputNumber(
+      "confirmPensionValue"
+    );
+
+
+  const isaInvest =
+    inputNumber(
+      "confirmIsaInvest"
+    );
+
+  const isaValue =
+    inputNumber(
+      "confirmIsaValue"
+    );
+
+
+  const tossInvest =
+    inputNumber(
+      "confirmTossInvest"
+    );
+
+  const tossValue =
+    inputNumber(
+      "confirmTossValue"
+    );
+
+
+  const savingsInvest =
+    inputNumber(
+      "confirmSavingsInvest"
+    );
+
+  const savingsValue =
+    inputNumber(
+      "confirmSavingsValue"
+    );
+
+
+  const values = [
+
+    pensionInvest,
+    pensionValue,
+
+    isaInvest,
+    isaValue,
+
+    tossInvest,
+    tossValue,
+
+    savingsInvest,
+    savingsValue
+
+  ];
+
+
+  if(
+    values.some(
+      v =>
+        !Number.isFinite(v) ||
+        v < 0
+    )
+  ){
+
+    alert(
+      "입력한 금액을 확인해주세요."
+    );
+
     return;
   }
 
 
-  const old=
-    data[latest];
+  const totalValue =
+    pensionValue +
+    isaValue +
+    tossValue +
+    savingsValue;
 
 
-  const next=
-    structuredClone(old);
+  const ok =
+    confirm(
+
+      month +
+      " 자산을 최종 저장할까요?\n\n" +
+
+      "연금저축: " +
+      money(pensionValue) +
+      "\n" +
+
+      "ISA: " +
+      money(isaValue) +
+      "\n" +
+
+      "토스증권: " +
+      money(tossValue) +
+      "\n" +
+
+      "청년도약계좌: " +
+      money(savingsValue) +
+      "\n\n" +
+
+      "총자산: " +
+      money(totalValue)
+
+    );
 
 
-  if(next.pension){
-
-    next.pension.value=
-      holdingValueTotal(
-        "pension"
-      );
-
+  if(!ok){
+    return;
   }
 
 
-  if(next.isa){
+  data[month] = {
 
-    next.isa.value=
-      holdingValueTotal(
-        "isa"
-      );
-
-  }
-
-
-  if(next.toss){
-
-    next.toss.value=
-      holdingValueTotal(
-        "toss"
-      );
-
-  }
+    label:
+      month.slice(0,4) +
+      "년 " +
+      Number(
+        month.slice(5)
+      ) +
+      "월",
 
 
-  data[month]=next;
+    pension:{
+
+      invest:
+        pensionInvest,
+
+      value:
+        pensionValue
+
+    },
+
+
+    isa:{
+
+      invest:
+        isaInvest,
+
+      value:
+        isaValue
+
+    },
+
+
+    toss:{
+
+      invest:
+        tossInvest,
+
+      value:
+        tossValue
+
+    },
+
+
+    savings:{
+
+      invest:
+        savingsInvest,
+
+      value:
+        savingsValue
+
+    }
+
+  };
 
 
   localStorage.setItem(
@@ -1262,7 +1498,7 @@ function confirmCurrentMonthAsset(){
 
 
   alert(
-    month+
+    month +
     " 자산이 최종 확정되었습니다."
   );
 
