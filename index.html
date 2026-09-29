@@ -186,6 +186,21 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
     -
   </span>
 </div>
+  
+  <div
+  style="
+    display:flex;
+    justify-content:flex-end;
+    margin:8px 0 12px;
+  "
+>
+  <button
+    class="btn small"
+    onclick="confirmCurrentMonthAsset()"
+  >
+    이번 달 자산 확정
+  </button>
+</div>
   <div class="grid" id="accountGrid"></div>
 
   <div class="section">자산 성장 vs 투자 성과</div>
@@ -979,6 +994,151 @@ function saveGoal(){
     String(month).padStart(2,"0") +
     "." +
     String(lastDay).padStart(2,"0")
+  );
+
+}
+  function currentMonthKey(){
+
+  const d=new Date();
+
+  return (
+    d.getFullYear()+
+    "-"+
+    String(
+      d.getMonth()+1
+    ).padStart(2,"0")
+  );
+
+}
+
+
+function confirmCurrentMonthAsset(){
+
+  const month=
+    currentMonthKey();
+
+  const latest=
+    latestKey();
+
+
+  if(!latest || !data[latest]){
+
+    alert(
+      "기준이 될 기존 자산 기록이 없습니다."
+    );
+
+    return;
+
+  }
+
+
+  const old=
+    data[latest];
+
+
+  const pensionValue=
+    holdingValueTotal("pension");
+
+  const isaValue=
+    holdingValueTotal("isa");
+
+  const tossValue=
+    holdingValueTotal("toss");
+
+
+  const existing=
+    data[month];
+
+
+  let message=
+
+    month+
+    " 자산을 확정할까요?\n\n"+
+    "연금저축: "+
+    money(pensionValue)+
+    "\n"+
+    "ISA: "+
+    money(isaValue)+
+    "\n"+
+    "토스증권: "+
+    money(tossValue);
+
+
+  if(existing){
+
+    message+=
+      "\n\n이미 이 달 기록이 있습니다.\n"+
+      "확정하면 기존 기록을 덮어씁니다.";
+
+  }
+
+
+  if(
+    !confirm(message)
+  ){
+
+    return;
+
+  }
+
+
+  /*
+  기존 최신 월 데이터를 복사
+  */
+
+  const next=
+    structuredClone(old);
+
+
+  /*
+  투자 계좌 평가금액만
+  현재 holdings 값으로 교체
+  */
+
+  if(next.pension){
+
+    next.pension.value=
+      pensionValue;
+
+  }
+
+
+  if(next.isa){
+
+    next.isa.value=
+      isaValue;
+
+  }
+
+
+  if(next.toss){
+
+    next.toss.value=
+      tossValue;
+
+  }
+
+
+  /*
+  청년도약계좌 등
+  나머지 자산은 기존값 유지
+  */
+
+  data[month]=next;
+
+
+  localStorage.setItem(
+    MONTH_KEY,
+    JSON.stringify(data)
+  );
+
+
+  renderAll();
+
+
+  alert(
+    month+
+    " 자산이 확정되었습니다."
   );
 
 }
