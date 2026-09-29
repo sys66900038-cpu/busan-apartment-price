@@ -384,6 +384,62 @@ const MONTH_KEY="my_asset_v4_monthly";
 const HOLD_KEY="my_asset_v4_holdings";
 let data=JSON.parse(localStorage.getItem(MONTH_KEY)||"null") || structuredClone(BASE);
 let holdings=JSON.parse(localStorage.getItem(HOLD_KEY)||"null") || structuredClone(DEFAULT_HOLDINGS);
+  const AUTO_TICKERS = {
+
+  /* 연금저축 */
+  "TIGER 미국나스닥100":"133690.KS",
+  "RISE 미국S&P500":"379780.KS",
+  "ACE KRX금현물":"411060.KS",
+
+  /*
+  아래 ETF들은 Yahoo 지원 여부를
+  확인하면서 차차 추가
+  */
+
+  /* ISA */
+  "KODEX 미국AI전력핵심인프라":"487230.KS",
+
+  "삼성전자":"005930.KS",
+  "하이닉스":"000660.KS",
+  "SK하이닉스":"000660.KS",
+  "삼성전기":"009150.KS"
+};
+
+
+/*
+기존 localStorage 종목에도
+자동으로 ticker 붙이기
+*/
+
+for(
+  const account
+  of ["pension","isa","toss"]
+){
+
+  for(
+    const h
+    of holdings[account] || []
+  ){
+
+    if(
+      !h.ticker &&
+      AUTO_TICKERS[h.name]
+    ){
+
+      h.ticker=
+        AUTO_TICKERS[h.name];
+
+    }
+
+  }
+
+}
+
+
+localStorage.setItem(
+  HOLD_KEY,
+  JSON.stringify(holdings)
+);
   const TICKER_MAP = {
   "QQQM":"QQQM",
   "SPYM":"SPYM",
@@ -1071,36 +1127,282 @@ function renderInvest(){
 }
 
 function renderHoldingAccount(k){
- const a=ACCOUNTS[k],arr=holdings[k]||[];
- return `<div class="account-block">
- <div class="account-title">
-   <b>${a.name}</b>
-<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-  ${k==="toss"
-    ? `<button class="btn gray small" onclick="refreshTossPrices()">↻ 현재가</button>`
-    : ""
-  }
-  <button class="btn gray small" onclick="manualSync('${k}')">합계 반영</button>
-  <button class="btn small" onclick="openHoldingModal('${k}',-1)">+ 종목 추가</button>
-</div>
- </div>
- <div class="card">
-   <div class="row" style="padding-bottom:10px;border-bottom:1px solid #edf0f4">
-     <span class="muted">종목 평가금액 합계</span>
-     <b>${money(holdingValueTotal(k))}</b>
-   </div>
-   ${arr.length?arr.map((h,i)=>holdingRow(k,h,i)).join(""):'<div class="muted" style="padding-top:12px">등록된 종목이 없습니다.</div>'}
- </div>
- </div>`;
+
+  const a=
+    ACCOUNTS[k];
+
+  const arr=
+    holdings[k] || [];
+
+
+  return `
+  <div class="account-block">
+
+    <div class="account-title">
+
+      <b>${a.name}</b>
+
+      <div
+        style="
+          display:flex;
+          gap:6px;
+          flex-wrap:wrap;
+          justify-content:flex-end
+        "
+      >
+
+        ${
+          k==="pension" ||
+          k==="isa"
+          ?
+          `
+          <button
+            class="btn gray small"
+            onclick="refreshKoreanPrices('${k}',this)"
+          >
+            ↻ 현재가
+          </button>
+          `
+          :
+          ""
+        }
+
+
+        ${
+          k==="toss"
+          ?
+          `
+          <button
+            class="btn gray small"
+            onclick="refreshTossPrices(this)"
+          >
+            ↻ 현재가
+          </button>
+          `
+          :
+          ""
+        }
+
+
+        <button
+          class="btn gray small"
+          onclick="manualSync('${k}')"
+        >
+          합계 반영
+        </button>
+
+
+        <button
+          class="btn small"
+          onclick="openHoldingModal('${k}',-1)"
+        >
+          + 종목 추가
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div
+        class="row"
+        style="
+          padding-bottom:10px;
+          border-bottom:1px solid #edf0f4
+        "
+      >
+
+        <span class="muted">
+          종목 평가금액 합계
+        </span>
+
+        <b>
+          ${money(
+            holdingValueTotal(k)
+          )}
+        </b>
+
+      </div>
+
+
+      ${
+        arr.length
+        ?
+        arr
+          .map(
+            (h,i)=>
+              holdingRow(
+                k,
+                h,
+                i
+              )
+          )
+          .join("")
+        :
+        `
+        <div
+          class="muted"
+          style="padding-top:12px"
+        >
+          등록된 종목이 없습니다.
+        </div>
+        `
+      }
+
+    </div>
+
+  </div>
+  `;
+
 }
 
-function holdingRow(account,h,i){
- const r=pctFromHolding(h);
- return `<div class="holding">
- <div class="row"><div><b>${h.name}</b><div class="muted">${h.qty!=null?`보유 ${h.qty}주`:"현금성 자산"} ${r!=null?`· <span class="${r>=0?"pos":"neg"}">${pct(r)}</span>`:""}</div></div><b>${money(h.value)}</b></div>
- ${h.avg!=null?`<div class="muted" style="margin-top:4px">평균매수가 ${money(h.avg)} · 현재가 ${money(h.current)}</div>`:""}
- <div class="holding-actions"><button class="btn gray small" onclick="openHoldingModal('${account}',${i})">수정</button><button class="btn danger small" onclick="deleteHolding('${account}',${i})">삭제</button></div>
- </div>`;
+function holdingRow(
+  account,
+  h,
+  i
+){
+
+  const r=
+    pctFromHolding(h);
+
+
+  const auto=
+    !!h.ticker;
+
+
+  return `
+  <div class="holding">
+
+    <div class="row">
+
+      <div>
+
+        <b>
+          ${h.name}
+        </b>
+
+        <span
+          class="pill"
+          style="margin-left:5px"
+        >
+          ${auto ? "자동" : "수동"}
+        </span>
+
+
+        <div class="muted">
+
+          ${
+            h.qty!=null
+            ?
+            `보유 ${h.qty}주`
+            :
+            "현금성 자산"
+          }
+
+          ${
+            r!=null
+            ?
+            ` ·
+            <span
+              class="${
+                r>=0
+                ?
+                "pos"
+                :
+                "neg"
+              }"
+            >
+              ${pct(r)}
+            </span>
+            `
+            :
+            ""
+          }
+
+        </div>
+
+      </div>
+
+
+      <b>
+        ${money(h.value)}
+      </b>
+
+    </div>
+
+
+    ${
+      h.avg!=null
+      ?
+      `
+      <div
+        class="muted"
+        style="margin-top:4px"
+      >
+
+        평균매수가
+        ${money(h.avg)}
+
+        · 현재가
+        ${money(h.current)}
+
+      </div>
+      `
+      :
+      ""
+    }
+
+
+    ${
+      h.ticker
+      ?
+      `
+      <div
+        class="muted"
+        style="margin-top:3px"
+      >
+        시세코드 ${h.ticker}
+      </div>
+      `
+      :
+      ""
+    }
+
+
+    <div class="holding-actions">
+
+      <button
+        class="btn gray small"
+        onclick="
+          openHoldingModal(
+            '${account}',
+            ${i}
+          )
+        "
+      >
+        수정
+      </button>
+
+
+      <button
+        class="btn danger small"
+        onclick="
+          deleteHolding(
+            '${account}',
+            ${i}
+          )
+        "
+      >
+        삭제
+      </button>
+
+    </div>
+
+  </div>
+  `;
+
 }
 
 async function refreshTossPrices(){
@@ -1278,6 +1580,264 @@ async function refreshTossPrices(){
     if(buttonEventTarget){
       buttonEventTarget.disabled=false;
       buttonEventTarget.textContent="↻ 현재가";
+    }
+
+  }
+
+}
+async function refreshKoreanPrices(
+  account,
+  button=null
+){
+
+  if(
+    account!=="pension" &&
+    account!=="isa"
+  ){
+    return;
+  }
+
+
+  const arr=
+    holdings[account] || [];
+
+
+  const autoItems=
+    arr.filter(
+      h=>h.ticker
+    );
+
+
+  if(
+    !autoItems.length
+  ){
+
+    alert(
+      "자동조회 가능한 종목이 없습니다."
+    );
+
+    return;
+
+  }
+
+
+  if(button){
+
+    button.disabled=true;
+
+    button.textContent=
+      "불러오는 중...";
+
+  }
+
+
+  try{
+
+    const symbols=
+      [
+        ...new Set(
+          autoItems.map(
+            h=>h.ticker
+          )
+        )
+      ];
+
+
+    const response=
+      await fetch(
+        "/api/quotes?symbols="+
+        encodeURIComponent(
+          symbols.join(",")
+        ),
+        {
+          cache:"no-store"
+        }
+      );
+
+
+    if(!response.ok){
+
+      throw new Error(
+        "시세 서버 응답 오류"
+      );
+
+    }
+
+
+    const payload=
+      await response.json();
+
+
+    const priceMap={};
+
+    const failed=[];
+
+
+    for(
+      const item
+      of payload.items || []
+    ){
+
+      if(
+        item.ok &&
+        Number.isFinite(
+          Number(item.price)
+        )
+      ){
+
+        priceMap[item.symbol]=
+          Number(item.price);
+
+      }else{
+
+        failed.push(
+          item.symbol
+        );
+
+      }
+
+    }
+
+
+    let updated=0;
+
+
+    for(
+      const h
+      of arr
+    ){
+
+      if(
+        !h.ticker ||
+        priceMap[h.ticker]==null
+      ){
+
+        /*
+        조회 실패 종목은
+        기존 수동값 유지
+        */
+
+        continue;
+
+      }
+
+
+      const price=
+        priceMap[h.ticker];
+
+
+      /*
+      국내 종목은 이미 KRW이므로
+      환율 변환 필요 없음
+      */
+
+      h.current=
+        Math.round(price);
+
+
+      if(
+        h.qty!=null &&
+        Number.isFinite(
+          Number(h.qty)
+        )
+      ){
+
+        h.value=
+          Math.round(
+            Number(h.qty) *
+            price
+          );
+
+      }
+
+
+      updated++;
+
+    }
+
+
+    localStorage.setItem(
+      HOLD_KEY,
+      JSON.stringify(holdings)
+    );
+
+
+    syncHoldingAccountToLatestMonth(
+      account
+    );
+
+
+    renderAll();
+
+
+    const msg=
+      document.getElementById(
+        "syncMsg"
+      );
+
+
+    if(msg){
+
+      let failedText="";
+
+
+      if(failed.length){
+
+        failedText=
+          `<br>
+          조회 실패:
+          ${failed.join(", ")}
+          <br>
+          실패 종목은 기존 입력값을 유지했습니다.`;
+
+      }
+
+
+      msg.innerHTML=`
+
+        <div
+          class="notice"
+          style="margin-bottom:12px"
+        >
+
+          ${ACCOUNTS[account].name}
+          자동시세 ${updated}개 종목을
+          갱신했습니다.
+
+          ${failedText}
+
+        </div>
+
+      `;
+
+    }
+
+  }
+
+  catch(error){
+
+    console.error(
+      "refreshKoreanPrices:",
+      error
+    );
+
+
+    alert(
+      "현재가 갱신에 실패했습니다.\n"+
+      error.message
+    );
+
+  }
+
+  finally{
+
+    if(button){
+
+      button.disabled=false;
+
+      button.textContent=
+        "↻ 현재가";
+
     }
 
   }
