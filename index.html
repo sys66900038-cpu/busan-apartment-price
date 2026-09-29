@@ -165,7 +165,27 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
   </div>
 
 </div>
-  <div class="section">계좌별 자산</div>
+  <div
+  class="section"
+  style="
+    display:flex;
+    justify-content:space-between;
+    align-items:end;
+  "
+>
+  <span>계좌별 자산</span>
+
+  <span
+    id="assetBaseDateText"
+    class="muted"
+    style="
+      font-size:11px;
+      font-weight:500;
+    "
+  >
+    -
+  </span>
+</div>
   <div class="grid" id="accountGrid"></div>
 
   <div class="section">자산 성장 vs 투자 성과</div>
@@ -935,8 +955,45 @@ function saveGoal(){
   renderGoal();
 
 }
+  function assetBaseDate(key){
+
+  if(!key) return "-";
+
+  const [
+    year,
+    month
+  ] = key
+    .split("-")
+    .map(Number);
+
+  const lastDay =
+    new Date(
+      year,
+      month,
+      0
+    ).getDate();
+
+  return (
+    year +
+    "." +
+    String(month).padStart(2,"0") +
+    "." +
+    String(lastDay).padStart(2,"0")
+  );
+
+}
   function renderHome(){
  const k=latestKey(),m=data[k],pk=prevKey(k),p=pk?total(data[pk]):0,t=total(m),d=t-p;
+    if(
+  document.getElementById(
+    "assetBaseDateText"
+  )
+){
+
+  assetBaseDateText.textContent =
+    assetBaseDate(k) + " 기준";
+
+}
  const yk=firstKeyOfYear(k), ybase=yk?total(data[yk]):0;
  const monthRate=pk?changeRate(t,p):null;
  const ytdAmt=yk?changeAmount(t,ybase):0;
