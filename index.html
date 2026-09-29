@@ -369,6 +369,47 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
   <button class="btn" id="updateButton" onclick="saveNextMonth()">저장하기</button>
   <button class="btn gray" onclick="clearNextMonthForm()">입력값 지우기</button>
   <button class="btn danger" onclick="deleteLatestMonth()">최근 월 기록 삭제</button>
+  <div class="section">데이터 관리</div>
+
+<div class="card">
+
+  <div class="muted" style="line-height:1.6">
+    월별 자산, 보유종목, 목표설정 등
+    MY ASSET 데이터를 파일로 백업하거나
+    기존 백업파일에서 복원할 수 있습니다.
+  </div>
+
+  <button
+    class="btn"
+    onclick="exportMyAssetBackup()"
+    style="margin-top:14px"
+  >
+    백업파일 저장
+  </button>
+
+  <button
+    class="btn gray"
+    onclick="document.getElementById('backupFileInput').click()"
+  >
+    백업파일 복원
+  </button>
+
+  <input
+    id="backupFileInput"
+    type="file"
+    accept=".json,application/json"
+    style="display:none"
+    onchange="importMyAssetBackup(event)"
+  >
+
+  <div
+    id="backupMessage"
+    class="muted"
+    style="margin-top:10px;line-height:1.5"
+  >
+  </div>
+
+</div>
   <div id="saveMsg"></div>
   <div class="section">월별 기록</div>
   <div class="card" id="history"></div>
@@ -2929,6 +2970,353 @@ function deleteLatestMonth(){
 }
 
 function renderAll(){renderHome();renderAssets();renderInvest();renderMarket();renderMonthly()}
+function exportMyAssetBackup(){
+
+  try{
+
+    const storage = {};
+
+    /*
+    MY ASSET 관련 localStorage만 백업
+    */
+
+    for(
+      let i=0;
+      i<localStorage.length;
+      i++
+    ){
+
+      const key=
+        localStorage.key(i);
+
+      if(
+        key &&
+        key.startsWith(
+          "my_asset_"
+        )
+      ){
+
+        storage[key]=
+          localStorage.getItem(
+            key
+          );
+
+      }
+
+    }
+
+
+    const backup={
+
+      app:
+        "MY ASSET",
+
+      version:
+        "1.0",
+
+      createdAt:
+        new Date()
+          .toISOString(),
+
+      storage
+
+    };
+
+
+    const json=
+      JSON.stringify(
+        backup,
+        null,
+        2
+      );
+
+
+    const blob=
+      new Blob(
+        [json],
+        {
+          type:
+            "application/json"
+        }
+      );
+
+
+    const url=
+      URL.createObjectURL(
+        blob
+      );
+
+
+    const a=
+      document.createElement(
+        "a"
+      );
+
+
+    const now=
+      new Date();
+
+
+    const dateText=
+      now.getFullYear()+
+      "-"+
+      String(
+        now.getMonth()+1
+      ).padStart(2,"0")+
+      "-"+
+      String(
+        now.getDate()
+      ).padStart(2,"0");
+
+
+    a.href=url;
+
+    a.download=
+      "MY_ASSET_BACKUP_"+
+      dateText+
+      ".json";
+
+
+    document.body
+      .appendChild(a);
+
+
+    a.click();
+
+
+    a.remove();
+
+
+    URL.revokeObjectURL(
+      url
+    );
+
+
+    const msg=
+      document.getElementById(
+        "backupMessage"
+      );
+
+
+    if(msg){
+
+      msg.textContent=
+        "백업파일을 생성했습니다. 안전한 곳에 보관해주세요.";
+
+    }
+
+  }
+
+  catch(error){
+
+    console.error(
+      "backup error:",
+      error
+    );
+
+
+    alert(
+      "백업파일 생성에 실패했습니다."
+    );
+
+  }
+
+}
+function importMyAssetBackup(event){
+
+  const file=
+    event.target.files?.[0];
+
+
+  if(!file){
+    return;
+  }
+
+
+  const reader=
+    new FileReader();
+
+
+  reader.onload=
+    function(){
+
+      try{
+
+        const backup=
+          JSON.parse(
+            reader.result
+          );
+
+
+        if(
+          backup?.app!=="MY ASSET" ||
+          !backup?.storage
+        ){
+
+          throw new Error(
+            "MY ASSET 백업파일이 아닙니다."
+          );
+
+        }
+
+
+        const keys=
+          Object.keys(
+            backup.storage
+          );
+
+
+        if(!keys.length){
+
+          throw new Error(
+            "백업 데이터가 없습니다."
+          );
+
+        }
+
+
+        const ok=
+          confirm(
+
+            "백업파일을 복원할까요?\n\n"+
+            "현재 브라우저의 MY ASSET 데이터가 "+
+            "백업파일 내용으로 변경됩니다.\n\n"+
+            "복원 전 현재 데이터를 먼저 백업하는 것을 권장합니다."
+
+          );
+
+
+        if(!ok){
+
+          event.target.value="";
+
+          return;
+
+        }
+
+
+        /*
+        현재 MY ASSET 데이터 제거
+        */
+
+        const removeKeys=[];
+
+
+        for(
+          let i=0;
+          i<localStorage.length;
+          i++
+        ){
+
+          const key=
+            localStorage.key(i);
+
+
+          if(
+            key &&
+            key.startsWith(
+              "my_asset_"
+            )
+          ){
+
+            removeKeys.push(
+              key
+            );
+
+          }
+
+        }
+
+
+        for(
+          const key
+          of removeKeys
+        ){
+
+          localStorage.removeItem(
+            key
+          );
+
+        }
+
+
+        /*
+        백업 데이터 복원
+        */
+
+        for(
+          const [
+            key,
+            value
+          ]
+          of Object.entries(
+            backup.storage
+          )
+        ){
+
+          if(
+            key.startsWith(
+              "my_asset_"
+            )
+          ){
+
+            localStorage.setItem(
+              key,
+              value
+            );
+
+          }
+
+        }
+
+
+        alert(
+          "복원이 완료되었습니다.\n앱을 새로고침합니다."
+        );
+
+
+        location.reload();
+
+      }
+
+      catch(error){
+
+        console.error(
+          "restore error:",
+          error
+        );
+
+
+        alert(
+          "백업파일을 읽을 수 없습니다.\n"+
+          error.message
+        );
+
+      }
+
+
+      event.target.value="";
+
+    };
+
+
+  reader.onerror=
+    function(){
+
+      alert(
+        "파일을 읽는 중 오류가 발생했습니다."
+      );
+
+      event.target.value="";
+
+    };
+
+
+  reader.readAsText(
+    file
+  );
+
+}
 renderAll();
 renderGoal();
 refreshMarketData(false);
