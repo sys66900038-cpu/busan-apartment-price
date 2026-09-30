@@ -1162,7 +1162,7 @@ function renderDashboard(){
  if(recent)recent.innerHTML=validKeys().slice(-3).reverse().map(k=>{
    const previous=prevKey(k), value=total(data[k]);
    const change=previous?signedMoney(value-total(data[previous])):'첫 기록';
-   return `<div class="dashboard-history"><span>${escapeAttr(data[k].label||k)}</span><b>${money(value)}</b><small>${previous?escapeAttr(data[previous].label||previous)+' 대비 ':''}${change}</small></div>`;
+   return `<div class="dashboard-history"><span>${escapeAttr(data[k].label||k)}</span><b>${money(value)}</b><small class="${previous?(value-total(data[previous])>=0?'pos':'neg'):''}">${previous?escapeAttr(data[previous].label||previous)+' 대비 ':''}${change}</small></div>`;
  }).join('')||'<div class="muted">아직 월별 기록이 없습니다.</div>';
 }
   function renderHome(){
@@ -1189,18 +1189,22 @@ function renderDashboard(){
  document.getElementById('homePensionExcluded').textContent='총자산에서 연금저축 '+money(Number(m.pension?.value||0))+' 제외';
  homeChange.textContent=pk?`${comparison} ${signedMoney(d)} (${signedPct(monthRate)})`:"첫 기록";
  homeChange.className="change "+(d>=0?"pos":"neg");
+ monthPerf.className="v "+(pk?(d>=0?"pos":"neg"):"");
  monthPerf.textContent=pk?`${signedMoney(d)} · ${signedPct(monthRate)}`:"-";
  document.querySelector('#monthPerf').previousElementSibling.textContent=comparison;
+ ytdPerf.className="v "+(yk?(ytdAmt>=0?"pos":"neg"):"");
  ytdPerf.textContent=yk?`${signedMoney(ytdAmt)} · ${signedPct(ytdRate)}`:"-";
 
  const invProfit=investmentProfit(m);
  const invReturn=investmentReturn(m);
  assetGrowthRate.textContent=yk?signedPct(ytdRate):"-";
  assetGrowthRate.className="v "+(ytdRate==null||ytdRate>=0?"pos":"neg");
+ assetGrowthAmount.className=yk?(ytdAmt>=0?"pos":"neg"):"muted";
  assetGrowthAmount.textContent=yk?`자산 ${signedMoney(ytdAmt)}`:"기준 데이터 없음";
 
  investmentReturnRate.textContent=invReturn==null?"-":signedPct(invReturn);
  investmentReturnRate.className="v "+(invReturn==null||invReturn>=0?"pos":"neg");
+ investmentReturnAmount.className=invReturn==null?"muted":(invProfit>=0?"pos":"neg");
  investmentReturnAmount.textContent=invReturn==null?"투자 데이터 없음":`평가손익 ${signedMoney(invProfit)}`;
  accountGrid.innerHTML=Object.entries(ACCOUNTS).map(([ak,a])=>{
    const v=m[ak]?.value||0;
@@ -1674,7 +1678,7 @@ function holdingRow(account,h,i){
  const r=pctFromHolding(h), auto=!!h.ticker&&h.autoPrice!==false;
  return `<div class="holding"><div class="row">
  <div><b>${escapeAttr(h.name)}</b> <span class="pill">${auto?'자동':'수동'}</span>
- <div class="muted">${h.qty!=null?'보유 '+h.qty+'주':'현금성 자산'}${r!=null?' · '+pct(r)+(isUsdHolding(h)?' (USD 기준)':''):''}</div></div>
+ <div class="muted">${h.qty!=null?'보유 '+h.qty+'주':'현금성 자산'}${r!=null?' · <span class="'+(r>=0?'pos':'neg')+'">'+signedPct(r)+(isUsdHolding(h)?' (USD 기준)':'')+'</span>':''}</div></div>
  <div class="holding-amount">${isUsdHolding(h)?'<strong>'+usdMoney(h.usd.value)+'</strong><span class="muted">'+money(h.value)+'</span>':'<strong>'+money(h.value)+'</strong>'}</div>
  </div><div class="muted" style="margin-top:7px;line-height:1.65">${currencyHoldingDetails(h)}</div>
  ${h.ticker?'<div class="muted" style="margin-top:5px">시세코드 '+escapeAttr(h.ticker)+'</div>':''}

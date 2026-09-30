@@ -13,7 +13,7 @@ body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"N
 .header{background:#fff;padding:18px;border-bottom:1px solid #e7ebf0;position:sticky;top:0;z-index:10}
 .logo{font-size:22px;font-weight:900}.logo span{color:#1769e0}.sub{font-size:12px;color:#7b8797;margin-top:3px}
 .wrap{padding:16px}.hidden{display:none!important}
-.hero{background:linear-gradient(135deg,#1769e0,#4a8df0);color:#fff;border-radius:22px;padding:22px;box-shadow:0 8px 24px rgba(23,105,224,.22)}
+.hero{background:linear-gradient(135deg,#111111,#252525);color:#fff;border-radius:22px;padding:22px;box-shadow:0 8px 24px rgba(0,0,0,.22)}
 .hero .label{font-size:12px;opacity:.82}.hero .total{font-size:31px;font-weight:900;margin:6px 0}
 .hero .change{
   display:inline-block;
@@ -25,14 +25,14 @@ body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"N
   font-size:13px;
   font-weight:800;
 }
-.hero .change.pos{color:#d9ffe8}
-.hero .change.neg{color:#ffe1e1}
+.hero .change.pos,.hero .pos{color:#ff9696}
+.hero .change.neg,.hero .neg{color:#91bdff}
 .section{font-size:16px;font-weight:900;margin:22px 2px 10px}
 .card,.mini{background:#fff;border:1px solid #e5eaf0;border-radius:17px;box-shadow:0 3px 12px rgba(20,40,70,.04)}
 .card{padding:16px;margin-bottom:10px}.mini{padding:14px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .name{font-weight:900}.value{font-size:18px;font-weight:900;margin-top:5px}.muted{font-size:12px;color:#7b8797}
-.pos{color:#1769e0}.neg{color:#e5484d}
+.pos{color:#d32f2f}.neg{color:#1769e0}
 .perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .perf-box{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:10px}
 .perf-box .k{font-size:11px;opacity:.82}.perf-box .v{font-size:13px;font-weight:900;margin-top:4px;color:#fff}
@@ -157,6 +157,8 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 .holding-amount{text-align:right;flex-shrink:0;max-width:52%;overflow-wrap:anywhere}
 .holding-amount strong,.holding-amount span{display:block}.holding-amount span{margin-top:4px}
 #hCurrencyNote,#hFxStatus{line-height:1.65}input[readonly]{background:#f2f6fa;color:#445}
+.hero .perf-box .v.pos{color:#ff9696}.hero .perf-box .v.neg{color:#91bdff}
+.dashboard-history small.pos{color:#d32f2f}.dashboard-history small.neg{color:#1769e0}
 </style>
 </head>
 <body>
