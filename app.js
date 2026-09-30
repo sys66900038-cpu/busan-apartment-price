@@ -1117,6 +1117,53 @@ function confirmCurrentMonthAsset(){
   );
 
 }
+function dashboardSnapshot(records, positions, now=Date.now()){
+ const months=Object.keys(records).filter(k=>/^\d{4}-(0[1-9]|1[0-2])$/.test(k)).sort();
+ const latest=months.at(-1), record=records[latest]||{};
+ const number=n=>Number.isFinite(Number(n))?Number(n):0;
+ let estimate=number(record.savings?.value), automatic=0, manual=0, missing=0, failed=0, older=0;
+ const timestamps=[], fallback=[];
+ for(const account of ['pension','isa','toss']){
+   if(!Array.isArray(positions[account])){estimate+=number(record[account]?.value);fallback.push(ACCOUNTS[account].name);continue}
+   for(const h of positions[account]){
+     estimate+=number(h.value);
+     if(!h.ticker||h.autoPrice===false){manual++;continue}
+     automatic++;
+     if(h.quoteError)failed++;
+     const ts=h.quote?.timestamp;
+     if(typeof ts!=='number'||!Number.isFinite(ts)||ts<=0||ts*1000>now+300000){missing++;continue}
+     timestamps.push(ts);
+     if(now-ts*1000>7*24*60*60*1000)older++;
+   }
+ }
+ const recorded=Object.keys(ACCOUNTS).reduce((sum,a)=>sum+number(record[a]?.value),0);
+ return {latest,estimate,recorded,difference:estimate-recorded,automatic,manual,missing,failed,older,fallback,
+   oldest:timestamps.length?Math.min(...timestamps):null};
+}
+function renderDashboard(){
+ const view=dashboardSnapshot(data,holdings);
+ const node=document.getElementById('homeSnapshot');
+ if(node)node.innerHTML=`<div class="dashboard-eyebrow">보유종목 기준 평가액</div>
+   <div class="dashboard-value">${money(view.estimate)}</div>
+   <div class="dashboard-difference ${view.difference>=0?'pos':'neg'}">월별 기록과 ${signedMoney(view.difference)} 차이</div>
+   <p class="dashboard-description">저장된 종목 평가금액에 청년도약계좌의 월별 기록을 더한 값입니다. 시세·수동 입력 시점이 섞여 있으며 실시간 총자산은 아닙니다. 차액은 투자수익을 뜻하지 않습니다.</p>
+   <div class="dashboard-health" aria-label="시세 확인 현황">
+     <span>자동조회 대상 ${view.automatic}개</span><span>수동 관리 ${view.manual}개</span>
+     ${view.missing?`<span>시세 미확인 ${view.missing}개</span>`:''}
+     ${view.failed?`<span>최근 조회 실패 ${view.failed}개</span>`:''}
+     ${view.older?`<span>7일 이전 시세 ${view.older}개</span>`:''}
+   </div>
+   <p class="dashboard-description">${view.oldest?'가장 오래된 종목 시세: '+escapeAttr(quoteTime(view.oldest*1000)):'아직 확인된 종목 시세가 없습니다.'}
+     ${view.fallback.length?'<br>종목 목록이 없는 '+escapeAttr(view.fallback.join(', '))+'는 월별 기록을 사용합니다.':''}</p>
+   <div class="dashboard-actions"><button class="btn" onclick="go('invest')">시세·보유종목 보기</button><button class="btn gray" onclick="confirmCurrentMonthAsset()">이번 달 기록하기</button></div>
+   <button class="btn gray" style="font-size:12px;padding:10px" onclick="exportMyAssetBackup()">현재 데이터 백업</button>`;
+ const recent=document.getElementById('homeRecent');
+ if(recent)recent.innerHTML=validKeys().slice(-3).reverse().map(k=>{
+   const previous=prevKey(k), value=total(data[k]);
+   const change=previous?signedMoney(value-total(data[previous])):'첫 기록';
+   return `<div class="dashboard-history"><span>${escapeAttr(data[k].label||k)}</span><b>${money(value)}</b><small>${previous?escapeAttr(data[previous].label||previous)+' 대비 ':''}${change}</small></div>`;
+ }).join('')||'<div class="muted">아직 월별 기록이 없습니다.</div>';
+}
   function renderHome(){
  const k=latestKey(),m=data[k],pk=prevKey(k),p=pk?total(data[pk]):0,t=total(m),d=t-p;
     if(
@@ -1134,11 +1181,13 @@ function confirmCurrentMonthAsset(){
  const ytdAmt=yk?changeAmount(t,ybase):0;
  const ytdRate=yk?changeRate(t,ybase):null;
 
+ const comparison=pk&&monthAfter(pk)===k?'전월 대비':'이전 기록 대비';
  homeMonth.textContent=m.label+" 기준";
  homeTotal.textContent=money(t);
- homeChange.textContent=pk?`전월 대비 ${signedMoney(d)} (${signedPct(monthRate)})`:"첫 기록";
+ homeChange.textContent=pk?`${comparison} ${signedMoney(d)} (${signedPct(monthRate)})`:"첫 기록";
  homeChange.className="change "+(d>=0?"pos":"neg");
  monthPerf.textContent=pk?`${signedMoney(d)} · ${signedPct(monthRate)}`:"-";
+ document.querySelector('#monthPerf').previousElementSibling.textContent=comparison;
  ytdPerf.textContent=yk?`${signedMoney(ytdAmt)} · ${signedPct(ytdRate)}`:"-";
 
  const invProfit=investmentProfit(m);
@@ -1152,7 +1201,8 @@ function confirmCurrentMonthAsset(){
  investmentReturnAmount.textContent=invReturn==null?"투자 데이터 없음":`평가손익 ${signedMoney(invProfit)}`;
  accountGrid.innerHTML=Object.entries(ACCOUNTS).map(([ak,a])=>{
    const v=m[ak]?.value||0;
-   return `<div class="mini"><div class="name">${a.name}</div><div class="value">${money(v)}</div><div class="muted">${t?(v/t*100).toFixed(1):0}%</div></div>`;
+   const delta=pk?v-Number(data[pk][ak]?.value||0):null;
+   return `<div class="mini"><div class="name">${a.name}</div><div class="value">${money(v)}</div><div class="muted">기록 총자산의 ${t?(v/t*100).toFixed(1):0}%</div><div class="dashboard-account-delta ${delta==null?'muted':delta>=0?'pos':'neg'}">${delta==null?'첫 기록':comparison+' '+signedMoney(delta)}</div></div>`;
  }).join("");
  renderTrendChart();
  allocation.innerHTML=Object.entries(ACCOUNTS).map(([ak,a])=>{
@@ -1164,6 +1214,8 @@ function confirmCurrentMonthAsset(){
  <div class="row" style="margin-top:10px"><span class="muted">평가금액</span><b>${money(t)}</b></div>
  <div class="row" style="margin-top:10px"><span class="muted">평가손익</span><b class="${pf>=0?"pos":"neg"}">${pf>=0?"+":""}${money(pf)}</b></div>
  <div class="row" style="margin-top:10px"><span class="muted">수익률</span><b class="${rate>=0?"pos":"neg"}">${pct(rate)}</b></div>`;
+ renderDashboard();
+ renderGoal();
 }
 
 function renderTrendChart(){
@@ -1835,6 +1887,7 @@ async function refreshAccountPrices(account,button=null){
    localStorage.setItem(HOLD_KEY,JSON.stringify(updatedHoldings));
    holdings=updatedHoldings;
    renderInvest();
+   renderDashboard();
    const msg=document.getElementById('syncMsg');
    if(msg){msg.innerHTML=`<div class="notice" style="margin-bottom:12px">${ACCOUNTS[account].name}: ${updated}개 갱신${skipped?`, 수정 중인 ${skipped}개 제외`:''}.
      ${failed.length?`<br>${escapeAttr(failed.join(', '))}<br>조회 실패 종목은 기존 가격을 유지했습니다.`:''}

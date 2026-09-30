@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1769e0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>MY ASSET V11</title>
+<title>MY ASSET</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;color:#172033}
@@ -139,6 +139,21 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 .goal-mini .k{font-size:10px;color:#7b8797}
 .goal-mini .v{font-size:14px;font-weight:900;margin-top:4px}
 .goal-main{font-size:23px;font-weight:900;margin-top:6px}
+.dashboard-panel{margin-top:14px;padding:18px;border:1px solid #dbe5f2;border-radius:18px;background:#fff}
+.dashboard-eyebrow{font-size:11px;font-weight:800;letter-spacing:.04em;color:#516780}
+.dashboard-value{font-size:26px;font-weight:900;letter-spacing:-.6px;margin:7px 0;overflow-wrap:anywhere}
+.dashboard-description{font-size:12px;color:#64748b;line-height:1.65;margin:8px 0}
+.dashboard-difference{font-size:13px;font-weight:700}
+.dashboard-health{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.dashboard-health span{font-size:11px;border-radius:7px;background:#f0f5fb;padding:5px 8px;color:#415977}
+.dashboard-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.dashboard-actions .btn{margin:0;font-size:12px;padding:11px 6px}
+.dashboard-history{display:grid;grid-template-columns:1fr auto;gap:6px;padding:12px 0;border-bottom:1px solid #edf0f4;font-size:13px}
+.dashboard-history:last-child{border:0}.dashboard-history small{grid-column:1/-1;color:#64748b}
+.dashboard-account-delta{margin-top:7px;font-size:11px;line-height:1.5}
+.dashboard-details{margin-top:20px}.dashboard-details summary{font-size:14px;font-weight:800;cursor:pointer;padding:10px 0}
+.mini,.kpi,.goal-mini{min-width:0}.mini .value,.goal-mini .v{overflow-wrap:anywhere}
+@media(max-width:360px){.hero{padding:18px}.hero .total{font-size:27px}.dashboard-value{font-size:23px}.mini{padding:11px}.value{font-size:16px}}
 </style>
 </head>
 <body>
@@ -147,6 +162,7 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 
 <section id="home" class="wrap">
   <div class="hero">
+    <div style="font-size:12px;font-weight:800;margin-bottom:8px">월별 기록 총자산</div>
     <div class="label" id="homeMonth"></div>
     <div class="total" id="homeTotal">0원</div>
     <div class="change" id="homeChange"></div>
@@ -156,7 +172,9 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
     </div>
   </div>
 
-  <div class="section">나의 목표</div>
+  <div id="homeSnapshot" class="dashboard-panel" aria-label="보유종목 기준 자산 요약"></div>
+
+  <div class="section">나의 목표 <span class="muted" style="font-weight:400">월별 기록 기준</span></div>
 
 <div class="goal-card">
 
@@ -248,7 +266,7 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 </div>
   <div class="grid" id="accountGrid"></div>
 
-  <div class="section">자산 성장 vs 투자 성과</div>
+  <div class="section">자산 성장 vs 투자 성과 <span class="muted" style="font-weight:400">월별 기록 기준</span></div>
   <div class="kpi-grid">
     <div class="kpi">
       <div class="k">연초 대비 자산 증가율</div>
@@ -291,11 +309,16 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
     </div>
   </div>
 
+  <div class="section">최근 월별 기록</div>
+  <div id="homeRecent" class="card"></div>
+
+  <details class="dashboard-details"><summary>자산 구성·투자 성과 자세히 보기</summary>
   <div class="section">자산 구성</div>
   <div class="card" id="allocation"></div>
 
   <div class="section">현재 투자 성과</div>
   <div class="card" id="summary"></div>
+  </details>
 </section>
 
 <section id="assets" class="wrap hidden">
