@@ -9,9 +9,11 @@ panel.innerHTML = `<details><summary style="cursor:pointer;font-weight:700">PC·
   <form id="sync-login" style="display:grid;gap:8px">
     <label>이메일 <input name="email" type="email" autocomplete="username" required style="width:100%"></label>
     <label>비밀번호 <input name="password" type="password" autocomplete="current-password" required style="width:100%"></label>
+    <label style="display:flex;align-items:center;gap:8px"><input id="sync-remember" type="checkbox" style="width:auto;margin:0">이 기기에서 로그인 유지</label>
+    <small style="color:#68788d">개인 PC·휴대폰에서만 선택하세요.</small>
     <button class="btn" type="submit">로그인</button>
   </form>
-  <div id="sync-signed" hidden><p id="sync-email"></p>
+  <div id="sync-signed" hidden><p id="sync-email"></p><p id="sync-session-mode" style="color:#68788d"></p>
     <button id="sync-now" class="btn gray small">지금 동기화</button>
     <button id="sync-logout" class="btn gray small">로그아웃</button>
   </div>
@@ -22,7 +24,7 @@ panel.innerHTML = `<details><summary style="cursor:pointer;font-weight:700">PC·
     <p>선택 전 양쪽 데이터를 기기에 보관합니다. 아래 버튼으로 내려받을 수 있습니다.</p>
   </div>
   <button id="sync-recovery" class="btn gray small" style="margin-top:10px">보관된 데이터 내려받기</button>
-  <p style="color:#68788d">기기 저장과 기존 JSON 백업은 계속 사용할 수 있습니다. 로그인은 이 탭을 닫을 때까지 유지됩니다.</p>
+  <p style="color:#68788d">기기 저장과 기존 JSON 백업은 계속 사용할 수 있습니다. 로그인 유지를 선택하면 브라우저를 다시 열어도 연결됩니다. 로그아웃하면 저장된 로그인 정보가 삭제됩니다.</p>
 </details>`;
 document.querySelector('.header').after(panel);
 const $ = id => document.getElementById(id);
@@ -34,7 +36,26 @@ function readJSON(store, key, fallback) {
 let meta;
 try { meta = readJSON(localStorage, META, {}); }
 catch { throw new Error('동기화 기록이 손상되었습니다. 기존 데이터를 백업한 뒤 복구가 필요합니다.'); }
-let session = readJSON(sessionStorage, SESSION, null);
+function readSavedSession(storage) {
+  try {
+    const value = readJSON(storage, SESSION, null);
+    if (value && typeof value.access_token === 'string' && typeof value.refresh_token === 'string' &&
+        Number.isFinite(value.expires_at) && typeof value.user?.id === 'string') return value;
+  } catch { /* Invalid saved login must not prevent access to local assets. */ }
+  storage.removeItem(SESSION);
+  return null;
+}
+let session = readSavedSession(localStorage);
+let keepSignedIn = !!session;
+if (session) sessionStorage.removeItem(SESSION);
+else session = readSavedSession(sessionStorage);
+function clearSession() {
+  session = null;
+  keepSignedIn = false;
+  localStorage.removeItem(SESSION);
+  sessionStorage.removeItem(SESSION);
+  showAuth();
+}
 let busy = false, enabled = false, choice = null, editing = false, lastAttempt = 0;
 const saveMeta = () => localStorage.setItem(META, JSON.stringify(meta));
 const snapshot = () => validateSnapshot(Object.fromEntries(SYNC_KEYS.map(k => [k, localStorage.getItem(k)])));
@@ -57,6 +78,7 @@ function showAuth() {
   $('sync-login').style.display = session ? 'none' : 'grid';
   $('sync-signed').hidden = !session;
   $('sync-email').textContent = session?.user?.email || '';
+  $('sync-session-mode').textContent = keepSignedIn ? '이 기기에서 로그인 유지 중' : '현재 탭에서만 로그인 중';
 }
 function showChoice(remote, message) {
   choice = { remote };
@@ -76,17 +98,22 @@ async function raw(path, method = 'GET', body, token) {
   if (!r.ok) { const e = new Error(value.error || '연결에 실패했습니다.'); e.status = r.status; throw e; }
   return value;
 }
-function storeSession(value) {
-  session = { access_token: value.access_token, refresh_token: value.refresh_token,
+function storeSession(value, persistent = keepSignedIn) {
+  const next = { access_token: value.access_token, refresh_token: value.refresh_token,
     expires_at: value.expires_at || Math.floor(Date.now() / 1000) + value.expires_in, user: value.user };
-  sessionStorage.setItem(SESSION, JSON.stringify(session));
+  const target = persistent ? localStorage : sessionStorage;
+  const other = persistent ? sessionStorage : localStorage;
+  target.setItem(SESSION, JSON.stringify(next));
+  other.removeItem(SESSION);
+  session = next;
+  keepSignedIn = persistent;
   showAuth();
 }
 async function api(path, method = 'GET', body) {
   if (!session) throw new Error('로그인이 필요합니다.');
   if (session.expires_at * 1000 < Date.now() + 60000) {
     try { storeSession(await raw('/api/sync/refresh', 'POST', { refresh_token: session.refresh_token })); }
-    catch (e) { if ([400, 401, 403].includes(e.status)) { session = null; sessionStorage.removeItem(SESSION); showAuth(); } throw e; }
+    catch (e) { if ([400, 401, 403].includes(e.status)) { clearSession(); clearChoice(); e.message = '로그인이 만료되었습니다. 다시 로그인해주세요.'; } throw e; }
   }
   return raw(path, method, body, session.access_token);
 }
@@ -152,7 +179,7 @@ async function run(work = reconcile) {
       try { showChoice(await getRemote(), '다른 기기에서 먼저 저장했습니다. 사용할 데이터를 다시 선택해주세요.'); }
       catch { status('충돌 확인 중 연결이 끊겼습니다. 기기 데이터는 유지됩니다. 다시 동기화해주세요.'); }
     } else {
-      if ([401, 403].includes(e.status)) { session = null; sessionStorage.removeItem(SESSION); showAuth(); clearChoice(); }
+      if ([401, 403].includes(e.status)) { clearSession(); clearChoice(); }
       status(e.name === 'TimeoutError' || e.name === 'TypeError' ? '연결 대기 중입니다. 기기 데이터는 유지됩니다.' : e.message);
     }
   } finally {
@@ -166,8 +193,9 @@ $('sync-login').addEventListener('submit', e => {
   void run(async () => {
     const form = e.target;
     const password = form.elements.password.value;
+    const persistent = $('sync-remember').checked;
     form.elements.password.value = '';
-    storeSession(await raw('/api/sync/login', 'POST', { email: form.elements.email.value.trim(), password }));
+    storeSession(await raw('/api/sync/login', 'POST', { email: form.elements.email.value.trim(), password }), persistent);
     clearChoice();
     await reconcile();
   });
@@ -175,7 +203,7 @@ $('sync-login').addEventListener('submit', e => {
 $('sync-now').onclick = () => { clearChoice(); void run(); };
 $('sync-logout').onclick = () => void run(async () => {
   try { await api('/api/sync/logout', 'POST'); } catch { /* Local sign-out must work offline. */ }
-  session = null; sessionStorage.removeItem(SESSION); clearChoice(); showAuth();
+  clearSession(); clearChoice();
   status('로그아웃했습니다. 이 기기의 자산과 미전송 변경사항은 보관됩니다.');
 });
 async function choose(useCloud) {
