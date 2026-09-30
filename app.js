@@ -1185,6 +1185,8 @@ function renderDashboard(){
  const comparison=pk&&monthAfter(pk)===k?'전월 대비':'이전 기록 대비';
  homeMonth.textContent=m.label+" 기준";
  homeTotal.textContent=money(t);
+ document.getElementById('homeWithoutPension').textContent=money(t-Number(m.pension?.value||0));
+ document.getElementById('homePensionExcluded').textContent='총자산에서 연금저축 '+money(Number(m.pension?.value||0))+' 제외';
  homeChange.textContent=pk?`${comparison} ${signedMoney(d)} (${signedPct(monthRate)})`:"첫 기록";
  homeChange.className="change "+(d>=0?"pos":"neg");
  monthPerf.textContent=pk?`${signedMoney(d)} · ${signedPct(monthRate)}`:"-";

@@ -168,6 +168,12 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
     <div style="font-size:12px;font-weight:800;margin-bottom:8px">월별 기록 총자산</div>
     <div class="label" id="homeMonth"></div>
     <div class="total" id="homeTotal">0원</div>
+    <div style="margin:14px 0;padding:14px;border-radius:14px;background:rgba(0,0,0,.14)">
+      <div style="font-size:13px;font-weight:700">연금저축 제외 자산</div>
+      <div id="homeWithoutPension" style="font-size:25px;font-weight:900;margin:5px 0" aria-live="polite">0원</div>
+      <div id="homePensionExcluded" style="font-size:12px;line-height:1.6"></div>
+      <div style="font-size:12px;line-height:1.6">ISA · 토스증권 · 청년도약계좌 합계 · 위 총자산과 같은 월 기준</div>
+    </div>
     <div class="change" id="homeChange"></div>
     <div class="perf-grid">
       <div class="perf-box"><div class="k">전월 대비</div><div class="v" id="monthPerf">-</div></div>
@@ -467,3 +473,4 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 <script src="/sync-boot.js" defer></script>
 </body>
 </html>
+
