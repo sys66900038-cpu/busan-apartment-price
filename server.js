@@ -1,3 +1,4 @@
+import { installSyncRoutes } from "./sync-server.js";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -8,8 +9,13 @@ const PORT = process.env.PORT || 10000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.json({ limit: "1100kb" }));
+// Expose only browser assets, never backups, server source or configuration.
+for (const name of ["app.js", "sync-boot.js", "sync-client.js", "sync-core.js"]) {
+  app.get("/" + name, (req, res) => res.set("Cache-Control", "no-cache").sendFile(path.join(__dirname, name)));
+}
+app.get("/api/health", (req, res) => res.json({ ok: true }));
+installSyncRoutes(app);
 
 
 /*
@@ -886,30 +892,10 @@ app.get(
 ==================================================
 */
 
-app.use(
-  (req, res) => {
-
-    res.sendFile(
-
-      path.join(
-        __dirname,
-        "index.html"
-      )
-
-    );
-
-  }
-);
-
-
-app.listen(
-  PORT,
-
-  () => {
-
-    console.log(
-      `MY ASSET server running on port ${PORT}`
-    );
-
-  }
-);
+app.use("/api", (req, res) => res.status(404).json({ error: "API를 찾을 수 없습니다." }));
+app.get(["/", "/index.html"], (req, res) => res.set("Cache-Control", "no-cache").sendFile(path.join(__dirname, "index.html")));
+app.use((req, res) => res.status(404).send("Not found"));
+app.use((error, req, res, next) => {
+  res.status(error.type === "entity.too.large" ? 413 : 400).json({ error: "요청 데이터의 크기나 형식을 확인해주세요." });
+});
+app.listen(PORT, () => console.log(`MY ASSET server running on port ${PORT}`));

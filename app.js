@@ -1,0 +1,2719 @@
+
+const BASE = {
+"2026-01":{label:"2026년 1월",pension:{invest:8811652,value:10273054},isa:{invest:23881257,value:27395962},toss:{invest:27648098.2,value:27239522.94},savings:{invest:7000000,value:7000000}},
+"2026-02":{label:"2026년 2월",pension:{invest:9318998,value:10570639},isa:{invest:24381257,value:27354081},toss:{invest:28148098.2,value:28285886},savings:{invest:7700000,value:7700000}},
+"2026-03":{label:"2026년 3월",pension:{invest:9821105,value:10828598},isa:{invest:24881257,value:27936267},toss:{invest:28648098.2,value:29204010},savings:{invest:8400000,value:8400000}},
+"2026-04":{label:"2026년 4월",pension:{invest:11132438,value:13289132},isa:{invest:26381257,value:28952746},toss:{invest:29148098.2,value:30606458},savings:{invest:9100000,value:9100000}},
+"2026-05":{label:"2026년 5월",pension:{invest:11632438,value:14900933},isa:{invest:26881257,value:33665543},toss:{invest:29648098.2,value:34547490},savings:{invest:9800000,value:9800000}},
+"2026-06":{label:"2026년 6월",pension:{invest:12132438,value:15408571},isa:{invest:27381257,value:30116870},toss:{invest:30148098.2,value:31613827},savings:{invest:10500000,value:10500000}},
+"2026-07":{label:"2026년 7월",pension:{invest:12632438,value:14553961},isa:{invest:27881257,value:23317000},toss:{invest:30648098.2,value:28967248},savings:{invest:11200000,value:11200000}},
+"2026-08":{label:"2026년 8월",pension:{invest:13132438,value:15098891},isa:{invest:28381257,value:24413816},toss:{invest:31148098.2,value:30710604},savings:{invest:11900000,value:11900000}}
+};
+
+const MARKET_BASE={
+ sp500:6878.11,
+ nasdaq100:25524.267,
+ kospi:4224.53
+};
+
+let MARKET_DATA={
+ "2026-01":{sp500:6939.03,nasdaq100:25552.387,kospi:5224.36},
+ "2026-02":{sp500:6878.88,nasdaq100:24960.035,kospi:6244.13},
+ "2026-03":{sp500:6368.85,nasdaq100:23132.771,kospi:5277.30},
+ "2026-04":{sp500:7135.95,nasdaq100:27186.985,kospi:6598.87},
+ "2026-05":{sp500:7580.06,nasdaq100:30333.18,kospi:8476.15},
+ "2026-06":{sp500:7440.43,nasdaq100:29774.751,kospi:8476.47},
+ "2026-07":{sp500:7489.72,nasdaq100:28274.195,kospi:6595.45},
+ "2026-08":{sp500:7711.76,nasdaq100:29433.428,kospi:6788.88}
+};
+
+const MARKET_STORE_KEY="my_asset_v11_market";
+const MARKET_META_KEY="my_asset_v11_market_meta";
+
+try{
+  const saved=JSON.parse(localStorage.getItem(MARKET_STORE_KEY)||"null");
+  if(saved && typeof saved==="object"){
+    MARKET_DATA={...MARKET_DATA,...saved};
+  }
+}catch(e){}
+
+
+
+const ACCOUNTS = {
+ pension:{name:"연금저축",color:"#1769e0"},
+ isa:{name:"ISA",color:"#12a594"},
+ toss:{name:"토스증권",color:"#8b5cf6"},
+ savings:{name:"청년도약계좌",color:"#f59e0b"}
+};
+
+const DEFAULT_HOLDINGS = {
+ pension:[
+  {name:"TIGER 미국나스닥100",qty:30,avg:144918,current:179490,value:5384700},
+  {name:"RISE 미국S&P500",qty:205,avg:18414,current:22980,value:4710900},
+  {name:"ACE KRX금현물",qty:35,avg:29984,current:28390,value:993650},
+  {name:"ACE 미국빅테크TOP7",qty:90,avg:22176,current:24165,value:2174850},
+  {name:"TIGER 미국필라델피아반도체",qty:28,avg:48408,current:41925,value:1173900},
+  {name:"현금",qty:null,avg:null,current:null,value:660891}
+ ],
+ isa:[
+  {name:"KoAct 글로벌AI메모리반도체",qty:120,avg:18733,current:13935,value:1672200},
+  {name:"KODEX 미국AI전력핵심인프라",qty:60,avg:28223,current:19380,value:1162800},
+  {name:"SOL AI반도체TOP2플러스",qty:80,avg:24925,current:17250,value:1380000},
+  {name:"TIGER 코리아AI전력기기TOP3",qty:60,avg:20565,current:19910,value:1194600},
+  {name:"TIME 글로벌휴머노이드로봇산업",qty:100,avg:9200,current:7420,value:742000},
+  {name:"KODEX 미국나스닥100",qty:88,avg:27745,current:26835,value:2361480},
+  {name:"삼성전자",qty:33,avg:293121,current:256500,value:8464500},
+  {name:"하이닉스",qty:3,avg:2560000,current:1658000,value:4974000},
+  {name:"삼성전기",qty:1,avg:1790000,current:1405000,value:1405000},
+  {name:"예수금",qty:null,avg:null,current:null,value:1057236}
+ ],
+toss:[
+  {name:"QQQM",ticker:"QQQM",qty:20,avg:397118,current:407188,value:8143760},
+  {name:"SPYM",ticker:"SPYM",qty:16,avg:123969,current:125013,value:2000208},
+  {name:"알파벳",ticker:"GOOGL",qty:10,avg:503492,current:478398,value:4783980},
+  {name:"엔비디아",ticker:"NVDA",qty:12,avg:290687,current:300284,value:3603408},
+  {name:"ASML",ticker:"ASML",qty:1,avg:2873556,current:2341209,value:2341209},
+  {name:"메타",ticker:"META",qty:2,avg:820700,current:797841,value:1595682},
+  {name:"스페이스X",ticker:"",qty:1,avg:160770,current:195312,value:195312},
+  {name:"QLD",ticker:"QLD",qty:32,avg:128010,current:124461,value:3982752},
+  {name:"CONL",ticker:"CONL",qty:157,avg:13290,current:7798,value:1224286},
+  {name:"ETHU",ticker:"ETHU",qty:48,avg:39269,current:35501,value:1704048},
+  {name:"달러",ticker:"",qty:null,avg:null,current:null,value:1135959}
+]
+};
+
+const MONTH_KEY="my_asset_v4_monthly";
+const HOLD_KEY="my_asset_v4_holdings";
+let data=JSON.parse(localStorage.getItem(MONTH_KEY)||"null") || structuredClone(BASE);
+let holdings=JSON.parse(localStorage.getItem(HOLD_KEY)||"null") || structuredClone(DEFAULT_HOLDINGS);
+  const AUTO_TICKERS = {
+
+  /* 연금저축 */
+  "TIGER 미국나스닥100":"133690.KS",
+  "RISE 미국S&P500":"379780.KS",
+  "ACE KRX금현물":"411060.KS",
+
+  /*
+  아래 ETF들은 Yahoo 지원 여부를
+  확인하면서 차차 추가
+  */
+  
+
+  /* ISA */
+  "KODEX 미국AI전력핵심인프라":"487230.KS",
+  "KoAct 글로벌AI메모리반도체":"0174B0.KS",
+  "SOL AI반도체TOP2플러스":"0167A0.KS",
+  "TIGER 코리아AI전력기기TOP3":"0117V0.KS",
+  "KODEX 미국나스닥100":"379810.KS",
+  "삼성전자":"005930.KS",
+  "하이닉스":"000660.KS",
+  "SK하이닉스":"000660.KS",
+  "삼성전기":"009150.KS"
+};
+
+
+/*
+기존 localStorage 종목에도
+자동으로 ticker 붙이기
+*/
+
+for(
+  const account
+  of ["pension","isa","toss"]
+){
+
+  for(
+    const h
+    of holdings[account] || []
+  ){
+
+    if(
+      !h.ticker &&
+      AUTO_TICKERS[h.name]
+    ){
+
+      h.ticker=
+        AUTO_TICKERS[h.name];
+
+    }
+
+  }
+
+}
+
+
+localStorage.setItem(
+  HOLD_KEY,
+  JSON.stringify(holdings)
+);
+  const TICKER_MAP = {
+  "QQQM":"QQQM",
+  "SPYM":"SPYM",
+  "알파벳":"GOOGL",
+  "엔비디아":"NVDA",
+  "ASML":"ASML",
+  "메타":"META",
+  "QLD":"QLD",
+  "CONL":"CONL",
+  "ETHU":"ETHU"
+};
+
+for(const h of holdings.toss || []){
+  if(!h.ticker && TICKER_MAP[h.name]){
+    h.ticker=TICKER_MAP[h.name];
+  }
+}
+
+localStorage.setItem(
+  HOLD_KEY,
+  JSON.stringify(holdings)
+);
+
+function money(n){return Math.round(Number(n||0)).toLocaleString("ko-KR")+"원"}
+function pctFromHolding(h){
+ if(h.qty && h.avg && h.current) return (h.current-h.avg)/h.avg;
+ return null;
+}
+function pct(n){return n==null?"-":(Number(n)*100).toFixed(2)+"%"}
+function keys(){return Object.keys(data).sort()}
+function isValidMonth(k){
+ const m=data[k];
+ if(!m) return false;
+ const t=total(m);
+ // 투자금이 있는데 평가금액 합계가 0이면 미완성 입력으로 간주
+ return !(invested(m)>0 && t===0);
+}
+function validKeys(){return keys().filter(isValidMonth)}
+function latestKey(){return validKeys().at(-1)}
+function prevKey(k){const a=validKeys(),i=a.indexOf(k);return i>0?a[i-1]:null}
+function total(m){return Object.keys(ACCOUNTS).reduce((s,k)=>s+Number(m?.[k]?.value||0),0)}
+function invested(m){return Object.keys(ACCOUNTS).reduce((s,k)=>s+Number(m?.[k]?.invest||0),0)}
+function firstKeyOfYear(k){
+ const year=String(k).slice(0,4);
+ return validKeys().find(x=>x.startsWith(year+"-")) || null;
+}
+function changeAmount(curr,base){return Number(curr||0)-Number(base||0)}
+function changeRate(curr,base){return Number(base||0)?(Number(curr||0)-Number(base||0))/Number(base):null}
+function signedMoney(n){return `${n>=0?"+":""}${money(n)}`}
+function signedPct(n){return n==null?"-":`${n>=0?"+":""}${(n*100).toFixed(2)}%`}
+
+const INVEST_ACCOUNTS=["pension","isa","toss"];
+
+function investmentPrincipal(m){
+ return INVEST_ACCOUNTS.reduce((s,k)=>s+Number(m?.[k]?.invest||0),0);
+}
+function investmentValue(m){
+ return INVEST_ACCOUNTS.reduce((s,k)=>s+Number(m?.[k]?.value||0),0);
+}
+function investmentProfit(m){
+ return investmentValue(m)-investmentPrincipal(m);
+}
+function investmentReturn(m){
+ const p=investmentPrincipal(m);
+ return p?investmentProfit(m)/p:null;
+}
+
+
+
+function go(id){
+ document.querySelectorAll("section.wrap").forEach(x=>x.classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+ document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("on"));
+ if(id==="home")navHome.classList.add("on");
+ if(id==="assets")navAssets.classList.add("on");
+ if(id==="invest")navInvest.classList.add("on");
+ if(id==="market")navMarket.classList.add("on");
+ if(id==="monthly")navMonthly.classList.add("on");
+ renderAll(); scrollTo(0,0);
+}
+
+const GOAL_KEY="my_asset_v13_goal";
+
+let goal=
+  JSON.parse(
+    localStorage.getItem(GOAL_KEY)||"null"
+  ) || {
+    year:2035,
+    amount:300000000,
+    monthlyContribution:1000000
+  };
+
+
+function monthsToGoal(year){
+
+  const now=new Date();
+
+  const end=
+    new Date(
+      Number(year),
+      11,
+      31
+    );
+
+  const months=
+    (end.getFullYear()-now.getFullYear())*12
+    +(end.getMonth()-now.getMonth());
+
+  return Math.max(0,months);
+}
+
+
+/* 특정 연수익률로 목표년도 자산 계산 */
+
+function futureAsset(
+  current,
+  monthly,
+  months,
+  annualRate
+){
+
+  const monthlyRate=
+    Math.pow(
+      1+annualRate,
+      1/12
+    )-1;
+
+
+  if(
+    Math.abs(monthlyRate)
+    <0.0000001
+  ){
+
+    return current+
+      monthly*months;
+
+  }
+
+
+  const growth=
+    Math.pow(
+      1+monthlyRate,
+      months
+    );
+
+
+  return (
+    current*growth
+    +
+    monthly*
+    (
+      (growth-1)/
+      monthlyRate
+    )
+  );
+
+}
+
+
+/* 목표금액 달성에 필요한 연수익률 계산 */
+
+function requiredAnnualReturn(
+  current,
+  monthly,
+  target,
+  months
+){
+
+  if(months<=0){
+    return null;
+  }
+
+
+  /* 수익률 0%만으로 목표 달성 */
+
+  if(
+    current+
+    monthly*months
+    >=target
+  ){
+
+    return 0;
+
+  }
+
+
+  let low=0;
+  let high=20;
+
+
+  /* 100번 반복해 근사값 계산 */
+
+  for(
+    let i=0;
+    i<100;
+    i++
+  ){
+
+    const mid=
+      (low+high)/2;
+
+
+    const future=
+      futureAsset(
+        current,
+        monthly,
+        months,
+        mid
+      );
+
+
+    if(future>=target){
+
+      high=mid;
+
+    }else{
+
+      low=mid;
+
+    }
+
+  }
+
+
+  return high;
+
+}
+
+
+function renderGoal(){
+
+  const k=latestKey();
+
+  if(!k || !data[k]) return;
+
+
+  const current=
+    total(data[k]);
+
+
+  const target=
+    Number(
+      goal.amount||0
+    );
+
+
+  const monthly=
+    Number(
+      goal.monthlyContribution||0
+    );
+
+
+  const months=
+    monthsToGoal(
+      goal.year
+    );
+
+
+  const progress=
+    target>0
+    ?
+    current/target*100
+    :
+    0;
+
+
+  const remain=
+    Math.max(
+      0,
+      target-current
+    );
+
+
+  const required=
+    requiredAnnualReturn(
+      current,
+      monthly,
+      target,
+      months
+    );
+
+
+  goalAmountText.textContent=
+    money(target);
+
+
+  goalYearText.textContent=
+    goal.year+"년";
+
+
+  goalMonthlyText.textContent=
+    money(monthly);
+
+
+  goalProgressText.textContent=
+    progress.toFixed(1)+"%";
+
+
+  goalProgressBar.style.width=
+    Math.min(
+      100,
+      Math.max(
+        0,
+        progress
+      )
+    )+"%";
+
+
+  goalRemainText.textContent=
+    money(remain);
+
+
+  if(current>=target){
+
+    goalRequiredText.textContent=
+      "달성";
+
+    goalMessage.textContent=
+      "목표금액을 이미 달성했습니다.";
+
+    return;
+
+  }
+
+
+  if(required===null){
+
+    goalRequiredText.textContent=
+      "-";
+
+    goalMessage.textContent=
+      "목표년도를 확인해주세요.";
+
+    return;
+
+  }
+
+
+  goalRequiredText.textContent=
+    "연 "+
+    (required*100)
+    .toFixed(1)
+    +"%";
+
+
+  goalMessage.textContent=
+    "현재자산 "+
+    money(current)+
+    "에 매월 "+
+    money(monthly)+
+    "을 추가한다고 가정하면, "+
+    goal.year+
+    "년 목표 달성에 필요한 연평균수익률은 약 "+
+    (required*100)
+    .toFixed(1)+
+    "%입니다.";
+
+}
+
+
+function openGoalModal(){
+
+  modalTitle.textContent=
+    "자산 목표 설정";
+
+
+  modalContent.innerHTML=`
+
+    <label>
+      목표년도
+    </label>
+
+    <input
+      id="gYear"
+      type="number"
+      value="${goal.year}"
+    >
+
+
+    <label>
+      목표금액
+    </label>
+
+    <input
+      id="gAmount"
+      type="number"
+      value="${goal.amount}"
+    >
+
+
+    <label>
+      매월 추가 투자금
+    </label>
+
+    <input
+      id="gMonthly"
+      type="number"
+      value="${goal.monthlyContribution||0}"
+      placeholder="예: 1000000"
+    >
+
+
+    <div
+      class="notice"
+      style="margin-top:12px"
+    >
+      목표년도와 목표금액,
+      매월 추가 투자금을 기준으로
+      필요한 연평균수익률을
+      자동 계산합니다.
+    </div>
+
+
+    <button
+      class="btn"
+      onclick="saveGoal()"
+    >
+      목표 저장하기
+    </button>
+
+  `;
+
+
+  modalBg.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+function saveGoal(){
+
+  const year=
+    Number(
+      document
+      .getElementById(
+        "gYear"
+      ).value
+    );
+
+
+  const amount=
+    Number(
+      document
+      .getElementById(
+        "gAmount"
+      ).value
+    );
+
+
+  const monthlyContribution=
+    Number(
+      document
+      .getElementById(
+        "gMonthly"
+      ).value
+    )||0;
+
+
+  if(
+    !year ||
+    !amount
+  ){
+
+    alert(
+      "목표년도와 목표금액을 확인해주세요."
+    );
+
+    return;
+
+  }
+
+
+  goal={
+    year,
+    amount,
+    monthlyContribution
+  };
+
+
+  localStorage.setItem(
+    GOAL_KEY,
+    JSON.stringify(goal)
+  );
+
+
+  closeModal();
+
+  renderGoal();
+
+}
+  function assetBaseDate(key){
+
+  if(!key) return "-";
+
+  const [
+    year,
+    month
+  ] = key
+    .split("-")
+    .map(Number);
+
+  const lastDay =
+    new Date(
+      year,
+      month,
+      0
+    ).getDate();
+
+  return (
+    year +
+    "." +
+    String(month).padStart(2,"0") +
+    "." +
+    String(lastDay).padStart(2,"0")
+  );
+
+}
+  function currentMonthKey(){
+
+  const d=new Date();
+
+  return (
+    d.getFullYear()+
+    "-"+
+    String(
+      d.getMonth()+1
+    ).padStart(2,"0")
+  );
+
+}
+
+
+function confirmCurrentMonthAsset(){
+
+  const month =
+    currentMonthKey();
+
+  const latest =
+    latestKey();
+
+  if(
+    !latest ||
+    !data[latest]
+  ){
+
+    alert(
+      "기준이 될 기존 자산 기록이 없습니다."
+    );
+
+    return;
+  }
+
+
+  /*
+  이미 이번 달 기록이 있으면
+  이번 달 값을 기준으로,
+  없으면 직전 월 값을 기준으로 사용
+  */
+
+  const base =
+    data[month] ||
+    data[latest];
+
+
+  /*
+  투자계좌 평가금액은
+  현재 투자화면의 실시간 보유종목 합계
+  */
+
+  const pensionValue =
+    holdingValueTotal(
+      "pension"
+    );
+
+  const isaValue =
+    holdingValueTotal(
+      "isa"
+    );
+
+  const tossValue =
+    holdingValueTotal(
+      "toss"
+    );
+
+
+  modalTitle.textContent =
+    "이번 달 자산 확정";
+
+
+  modalContent.innerHTML = `
+
+    <div class="notice">
+      아직 저장되지 않습니다.<br>
+      각 금액을 확인하거나 수정한 뒤
+      최종 확정해주세요.
+    </div>
+
+
+    <div
+      style="
+        margin-top:14px;
+        font-size:18px;
+        font-weight:900;
+      "
+    >
+      ${month.replace("-", "년 ")}월
+    </div>
+
+
+    <!-- 연금저축 -->
+
+    <div
+      class="card"
+      style="margin-top:12px"
+    >
+
+      <b>연금저축</b>
+
+      <label>
+        투자원금
+      </label>
+
+      <input
+        id="confirmPensionInvest"
+        type="number"
+        value="${base.pension?.invest || 0}"
+      >
+
+      <label>
+        평가금액
+      </label>
+
+      <input
+        id="confirmPensionValue"
+        type="number"
+        value="${Math.round(pensionValue)}"
+      >
+
+    </div>
+
+
+    <!-- ISA -->
+
+    <div class="card">
+
+      <b>ISA</b>
+
+      <label>
+        투자원금
+      </label>
+
+      <input
+        id="confirmIsaInvest"
+        type="number"
+        value="${base.isa?.invest || 0}"
+      >
+
+      <label>
+        평가금액
+      </label>
+
+      <input
+        id="confirmIsaValue"
+        type="number"
+        value="${Math.round(isaValue)}"
+      >
+
+    </div>
+
+
+    <!-- 토스증권 -->
+
+    <div class="card">
+
+      <b>토스증권</b>
+
+      <label>
+        투자원금
+      </label>
+
+      <input
+        id="confirmTossInvest"
+        type="number"
+        value="${base.toss?.invest || 0}"
+      >
+
+      <label>
+        평가금액
+      </label>
+
+      <input
+        id="confirmTossValue"
+        type="number"
+        value="${Math.round(tossValue)}"
+      >
+
+    </div>
+
+
+    <!-- 청년도약계좌 -->
+
+    <div class="card">
+
+      <b>청년도약계좌</b>
+
+      <label>
+        납입원금
+      </label>
+
+      <input
+        id="confirmSavingsInvest"
+        type="number"
+        value="${base.savings?.invest || 0}"
+      >
+
+      <label>
+        현재금액
+      </label>
+
+      <input
+        id="confirmSavingsValue"
+        type="number"
+        value="${base.savings?.value || 0}"
+      >
+
+    </div>
+
+
+    <button
+      class="btn"
+      onclick="saveCurrentMonthAsset()"
+    >
+      최종 확정
+    </button>
+
+
+    <button
+      class="btn gray"
+      onclick="closeModal()"
+    >
+      취소
+    </button>
+
+  `;
+
+
+  modalBg.classList.remove(
+    "hidden"
+  );
+
+}
+  function saveCurrentMonthAsset(){
+
+  const month =
+    currentMonthKey();
+
+
+  function inputNumber(id){
+
+    const el =
+      document.getElementById(id);
+
+    if(!el){
+      return NaN;
+    }
+
+    return Number(
+      el.value
+    );
+
+  }
+
+
+  const pensionInvest =
+    inputNumber(
+      "confirmPensionInvest"
+    );
+
+  const pensionValue =
+    inputNumber(
+      "confirmPensionValue"
+    );
+
+
+  const isaInvest =
+    inputNumber(
+      "confirmIsaInvest"
+    );
+
+  const isaValue =
+    inputNumber(
+      "confirmIsaValue"
+    );
+
+
+  const tossInvest =
+    inputNumber(
+      "confirmTossInvest"
+    );
+
+  const tossValue =
+    inputNumber(
+      "confirmTossValue"
+    );
+
+
+  const savingsInvest =
+    inputNumber(
+      "confirmSavingsInvest"
+    );
+
+  const savingsValue =
+    inputNumber(
+      "confirmSavingsValue"
+    );
+
+
+  const values = [
+
+    pensionInvest,
+    pensionValue,
+
+    isaInvest,
+    isaValue,
+
+    tossInvest,
+    tossValue,
+
+    savingsInvest,
+    savingsValue
+
+  ];
+
+
+  if(
+    values.some(
+      v =>
+        !Number.isFinite(v) ||
+        v < 0
+    )
+  ){
+
+    alert(
+      "입력한 금액을 확인해주세요."
+    );
+
+    return;
+  }
+
+
+  const totalValue =
+    pensionValue +
+    isaValue +
+    tossValue +
+    savingsValue;
+
+
+  const ok =
+    confirm(
+
+      month +
+      " 자산을 최종 저장할까요?\n\n" +
+
+      "연금저축: " +
+      money(pensionValue) +
+      "\n" +
+
+      "ISA: " +
+      money(isaValue) +
+      "\n" +
+
+      "토스증권: " +
+      money(tossValue) +
+      "\n" +
+
+      "청년도약계좌: " +
+      money(savingsValue) +
+      "\n\n" +
+
+      "총자산: " +
+      money(totalValue)
+
+    );
+
+
+  if(!ok){
+    return;
+  }
+
+
+  data[month] = {
+
+    label:
+      month.slice(0,4) +
+      "년 " +
+      Number(
+        month.slice(5)
+      ) +
+      "월",
+
+
+    pension:{
+
+      invest:
+        pensionInvest,
+
+      value:
+        pensionValue
+
+    },
+
+
+    isa:{
+
+      invest:
+        isaInvest,
+
+      value:
+        isaValue
+
+    },
+
+
+    toss:{
+
+      invest:
+        tossInvest,
+
+      value:
+        tossValue
+
+    },
+
+
+    savings:{
+
+      invest:
+        savingsInvest,
+
+      value:
+        savingsValue
+
+    }
+
+  };
+
+
+  localStorage.setItem(
+    MONTH_KEY,
+    JSON.stringify(data)
+  );
+
+
+  closeModal();
+
+  renderAll();
+
+
+  alert(
+    month +
+    " 자산이 최종 확정되었습니다."
+  );
+
+}
+  function renderHome(){
+ const k=latestKey(),m=data[k],pk=prevKey(k),p=pk?total(data[pk]):0,t=total(m),d=t-p;
+    if(
+  document.getElementById(
+    "assetBaseDateText"
+  )
+){
+
+  assetBaseDateText.textContent =
+    assetBaseDate(k) + " 기준";
+
+}
+ const yk=firstKeyOfYear(k), ybase=yk?total(data[yk]):0;
+ const monthRate=pk?changeRate(t,p):null;
+ const ytdAmt=yk?changeAmount(t,ybase):0;
+ const ytdRate=yk?changeRate(t,ybase):null;
+
+ homeMonth.textContent=m.label+" 기준";
+ homeTotal.textContent=money(t);
+ homeChange.textContent=pk?`전월 대비 ${signedMoney(d)} (${signedPct(monthRate)})`:"첫 기록";
+ homeChange.className="change "+(d>=0?"pos":"neg");
+ monthPerf.textContent=pk?`${signedMoney(d)} · ${signedPct(monthRate)}`:"-";
+ ytdPerf.textContent=yk?`${signedMoney(ytdAmt)} · ${signedPct(ytdRate)}`:"-";
+
+ const invProfit=investmentProfit(m);
+ const invReturn=investmentReturn(m);
+ assetGrowthRate.textContent=yk?signedPct(ytdRate):"-";
+ assetGrowthRate.className="v "+(ytdRate==null||ytdRate>=0?"pos":"neg");
+ assetGrowthAmount.textContent=yk?`자산 ${signedMoney(ytdAmt)}`:"기준 데이터 없음";
+
+ investmentReturnRate.textContent=invReturn==null?"-":signedPct(invReturn);
+ investmentReturnRate.className="v "+(invReturn==null||invReturn>=0?"pos":"neg");
+ investmentReturnAmount.textContent=invReturn==null?"투자 데이터 없음":`평가손익 ${signedMoney(invProfit)}`;
+ accountGrid.innerHTML=Object.entries(ACCOUNTS).map(([ak,a])=>{
+   const v=m[ak]?.value||0;
+   return `<div class="mini"><div class="name">${a.name}</div><div class="value">${money(v)}</div><div class="muted">${t?(v/t*100).toFixed(1):0}%</div></div>`;
+ }).join("");
+ renderTrendChart();
+ allocation.innerHTML=Object.entries(ACCOUNTS).map(([ak,a])=>{
+   const v=m[ak]?.value||0,r=t?v/t*100:0;
+   return `<div style="margin-bottom:14px"><div class="row"><span>${a.name}</span><b>${money(v)}</b></div><div class="bar"><i style="width:${r}%;background:${a.color}"></i></div><div class="muted" style="margin-top:4px">${r.toFixed(1)}%</div></div>`;
+ }).join("");
+ const inv=invested(m),pf=t-inv,rate=inv?pf/inv:0;
+ summary.innerHTML=`<div class="row"><span class="muted">총 투자금액</span><b>${money(inv)}</b></div>
+ <div class="row" style="margin-top:10px"><span class="muted">평가금액</span><b>${money(t)}</b></div>
+ <div class="row" style="margin-top:10px"><span class="muted">평가손익</span><b class="${pf>=0?"pos":"neg"}">${pf>=0?"+":""}${money(pf)}</b></div>
+ <div class="row" style="margin-top:10px"><span class="muted">수익률</span><b class="${rate>=0?"pos":"neg"}">${pct(rate)}</b></div>`;
+}
+
+function renderTrendChart(){
+  const svg = document.getElementById("trendChart");
+  const box = document.getElementById("trendChartBox");
+  const tooltip = document.getElementById("trendTooltip");
+
+  const ks = validKeys();
+  if(!ks.length){
+    svg.innerHTML = "";
+    if(tooltip) tooltip.style.display = "none";
+    return;
+  }
+
+  const W = 420, H = 210, L = 44, R = 8, T = 12, B = 28;
+  const plotW = W - L - R;
+  const plotH = H - T - B;
+
+  const totalVals = ks.map(k => total(data[k]));
+
+  const lineSeries = [
+    {key:"pension", label:"연금저축", color:"#1769e0", width:2},
+    {key:"isa",     label:"ISA",     color:"#12a594", width:2},
+    {key:"toss",    label:"토스증권", color:"#8b5cf6", width:2},
+    {key:"savings", label:"청년도약계좌", color:"#f59e0b", width:2}
+  ];
+
+  const valuesBySeries = {
+    total: totalVals
+  };
+
+  for(const s of lineSeries){
+    valuesBySeries[s.key] = ks.map(k => Number(data[k][s.key]?.value || 0));
+  }
+
+  const allValues = [
+    ...totalVals,
+    ...lineSeries.flatMap(s => valuesBySeries[s.key])
+  ];
+
+  const maxRaw = Math.max(...allValues, 1);
+  const maxY = Math.ceil((maxRaw * 1.08) / 10000000) * 10000000;
+  const minY = 0;
+
+  const x = i => L + (ks.length === 1 ? plotW / 2 : i * plotW / (ks.length - 1));
+  const y = v => T + (maxY - v) / (maxY - minY) * plotH;
+
+  let out = "";
+
+  // grid + y labels
+  const gridCount = 4;
+  for(let g = 0; g <= gridCount; g++){
+    const value = maxY - (maxY - minY) * (g / gridCount);
+    const yy = T + plotH * (g / gridCount);
+
+    out += `<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e8edf3" stroke-width="1"/>`;
+    out += `<text x="${L-5}" y="${yy+3}" text-anchor="end" font-size="9" fill="#8a95a5">${Math.round(value/1000000)}M</text>`;
+  }
+
+  // total bars (behind)
+  const barWidth = ks.length === 1 ? 28 : Math.min(26, (plotW / ks.length) * 0.5);
+  totalVals.forEach((v, i) => {
+    const xx = x(i) - barWidth / 2;
+    const yy = y(v);
+    const hh = H - B - yy;
+
+    out += `
+      <rect
+        x="${xx}"
+        y="${yy}"
+        width="${barWidth}"
+        height="${Math.max(hh, 0)}"
+        rx="7"
+        fill="rgba(23,32,51,.14)"
+      />
+    `;
+  });
+
+  // hover guide line
+  out += `
+    <line
+      id="trendGuide"
+      x1="${L}"
+      y1="${T}"
+      x2="${L}"
+      y2="${H-B}"
+      stroke="#94a3b8"
+      stroke-width="1"
+      stroke-dasharray="4 4"
+      style="display:none"
+    />
+  `;
+
+  // account lines
+  for(const s of lineSeries){
+    const vals = valuesBySeries[s.key];
+    const pts = vals.map((v,i) => `${x(i)},${y(v)}`).join(" ");
+
+    out += `
+      <polyline
+        points="${pts}"
+        fill="none"
+        stroke="${s.color}"
+        stroke-width="${s.width}"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        opacity=".95"
+      />
+    `;
+
+    vals.forEach((v,i) => {
+      out += `
+        <circle
+          cx="${x(i)}"
+          cy="${y(v)}"
+          r="2.8"
+          fill="${s.color}"
+        />
+      `;
+    });
+  }
+
+  // total top points only
+  totalVals.forEach((v,i) => {
+    out += `
+      <circle
+        cx="${x(i)}"
+        cy="${y(v)}"
+        r="2.6"
+        fill="#172033"
+        opacity=".9"
+      />
+    `;
+  });
+
+  // x labels
+  ks.forEach((k, i) => {
+    out += `<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#7b8797">${Number(k.slice(5))}월</text>`;
+  });
+
+  // invisible hover columns
+  ks.forEach((k, i) => {
+    const left = i === 0 ? L : (x(i-1) + x(i)) / 2;
+    const right = i === ks.length - 1 ? (W - R) : (x(i) + x(i+1)) / 2;
+
+    out += `
+      <rect
+        class="hover-col"
+        data-i="${i}"
+        x="${left}"
+        y="${T}"
+        width="${right-left}"
+        height="${plotH}"
+        fill="transparent"
+        style="cursor:pointer"
+      />
+    `;
+  });
+
+  svg.innerHTML = out;
+
+  const guide = document.getElementById("trendGuide");
+
+  function getMonthLabel(key){
+    return data[key]?.label || key;
+  }
+
+  function tooltipHtml(i){
+    const rows = [
+      {label:"총자산", color:"rgba(23,32,51,.7)", value:totalVals[i]},
+      ...lineSeries.map(s => ({
+        label:s.label,
+        color:s.color,
+        value:valuesBySeries[s.key][i]
+      }))
+    ];
+
+    return `
+      <div class="tt-title">${getMonthLabel(ks[i])}</div>
+      ${rows.map(r => `
+        <div class="tt-row">
+          <span><i style="background:${r.color}"></i>${r.label}</span>
+          <b>${money(r.value)}</b>
+        </div>
+      `).join("")}
+    `;
+  }
+
+  function showTooltip(i){
+    tooltip.innerHTML = tooltipHtml(i);
+    tooltip.style.display = "block";
+
+    guide.setAttribute("x1", x(i));
+    guide.setAttribute("x2", x(i));
+    guide.style.display = "block";
+
+    let leftPx = (x(i) / W) * box.clientWidth + 10;
+
+    requestAnimationFrame(() => {
+      const maxLeft = box.clientWidth - tooltip.offsetWidth - 6;
+      if(leftPx > maxLeft) leftPx = maxLeft;
+      if(leftPx < 6) leftPx = 6;
+
+      tooltip.style.left = leftPx + "px";
+      tooltip.style.top = "8px";
+    });
+  }
+
+  function hideTooltip(){
+    tooltip.style.display = "none";
+    guide.style.display = "none";
+  }
+
+  svg.querySelectorAll(".hover-col").forEach(el => {
+    const i = Number(el.dataset.i);
+
+    el.addEventListener("mouseenter", () => showTooltip(i));
+    el.addEventListener("mousemove", () => showTooltip(i));
+    el.addEventListener("click", () => showTooltip(i));
+  });
+
+  box.addEventListener("mouseleave", hideTooltip);
+}
+
+function renderAssets(){
+ const k=latestKey(),m=data[k],t=total(m);
+ const pk=prevKey(k),pm=pk?data[pk]:null;
+ const yk=firstKeyOfYear(k),ym=yk?data[yk]:null;
+
+ assetTotal.textContent=money(t);
+
+ const monthAmt=pm?changeAmount(t,total(pm)):0;
+ const monthRate=pm?changeRate(t,total(pm)):null;
+ const ytdAmt=ym?changeAmount(t,total(ym)):0;
+ const ytdRate=ym?changeRate(t,total(ym)):null;
+
+ assetPerformance.innerHTML=`
+   <div class="metric-row metric-head"><span>구분</span><span>금액 변화</span><span>변화율</span></div>
+   <div class="metric-row"><b>전월 대비</b><b class="${monthAmt>=0?"pos":"neg"}">${pm?signedMoney(monthAmt):"-"}</b><b class="${(monthRate??0)>=0?"pos":"neg"}">${pm?signedPct(monthRate):"-"}</b></div>
+   <div class="metric-row"><b>연초 대비</b><b class="${ytdAmt>=0?"pos":"neg"}">${ym?signedMoney(ytdAmt):"-"}</b><b class="${(ytdRate??0)>=0?"pos":"neg"}">${ym?signedPct(ytdRate):"-"}</b></div>
+ `;
+
+ assetCards.innerHTML=Object.entries(ACCOUNTS).map(([ak,a])=>{
+  const x=m[ak],pf=x.value-x.invest,r=x.invest?pf/x.invest:0;
+  const prevVal=pm?Number(pm[ak]?.value||0):null;
+  const firstVal=ym?Number(ym[ak]?.value||0):null;
+  const mAmt=pm?changeAmount(x.value,prevVal):null;
+  const mRate=pm?changeRate(x.value,prevVal):null;
+  const yAmt=ym?changeAmount(x.value,firstVal):null;
+  const yRate=ym?changeRate(x.value,firstVal):null;
+
+  return `<div class="card">
+    <div class="row"><b>${a.name}</b><b>${money(x.value)}</b></div>
+    <div class="row" style="margin-top:8px"><span class="muted">투자금액</span><span>${money(x.invest)}</span></div>
+    <div class="row" style="margin-top:6px"><span class="muted">평가손익</span><b class="${pf>=0?"pos":"neg"}">${pf>=0?"+":""}${money(pf)}</b></div>
+    <div class="row" style="margin-top:6px"><span class="muted">계좌 수익률</span><b class="${r>=0?"pos":"neg"}">${pct(r)}</b></div>
+    <div class="metric-row" style="margin-top:8px"><span class="muted">전월 대비</span><b class="${(mAmt??0)>=0?"pos":"neg"}">${pm?signedMoney(mAmt):"-"}</b><b class="${(mRate??0)>=0?"pos":"neg"}">${pm?signedPct(mRate):"-"}</b></div>
+    <div class="metric-row"><span class="muted">연초 대비</span><b class="${(yAmt??0)>=0?"pos":"neg"}">${ym?signedMoney(yAmt):"-"}</b><b class="${(yRate??0)>=0?"pos":"neg"}">${ym?signedPct(yRate):"-"}</b></div>
+  </div>`;
+ }).join("");
+}
+
+function holdingValueTotal(account){
+ return (holdings[account]||[]).reduce((sum,h)=>sum+Number(h.value||0),0);
+}
+
+function syncHoldingAccountToLatestMonth(account){
+ const k=latestKey();
+ if(!k || !data[k] || !data[k][account]) return;
+
+ const newValue=holdingValueTotal(account);
+ data[k][account].value=newValue;
+ localStorage.setItem(MONTH_KEY,JSON.stringify(data));
+
+ const msg=document.getElementById("syncMsg");
+ if(msg){
+   msg.innerHTML=`<div class="notice" style="margin-bottom:12px">${ACCOUNTS[account].name} 종목 합계 ${money(newValue)}가 ${data[k].label} 평가금액에 자동 반영되었습니다.</div>`;
+ }
+}
+
+function syncAllHoldingAccountsToLatestMonth(){
+ ["pension","isa","toss"].forEach(syncHoldingAccountToLatestMonth);
+}
+
+function renderInvest(){
+ const k=latestKey(),m=data[k];
+ const iv=investmentPrincipal(m);
+ const vv=investmentValue(m);
+ const pf=vv-iv;
+ const r=iv?pf/iv:0;
+
+ const yk=firstKeyOfYear(k);
+ const ym=yk?data[yk]:null;
+ const ytdInvValueChange=ym?changeAmount(vv,investmentValue(ym)):null;
+ const ytdInvValueRate=ym?changeRate(vv,investmentValue(ym)):null;
+ const principalAdded=ym?changeAmount(iv,investmentPrincipal(ym)):null;
+
+ investSummary.innerHTML=`
+ <div class="row"><span class="muted">투자계좌 원금</span><b>${money(iv)}</b></div>
+ <div class="row" style="margin-top:10px"><span class="muted">투자계좌 평가액</span><b>${money(vv)}</b></div>
+ <div class="row" style="margin-top:10px"><span class="muted">현재 평가손익</span><b class="${pf>=0?"pos":"neg"}">${signedMoney(pf)}</b></div>
+ <div class="row" style="margin-top:10px"><span class="muted">현재 투자손익률</span><b class="${r>=0?"pos":"neg"}">${signedPct(r)}</b></div>
+ <div style="height:10px"></div>
+ <div class="metric-row metric-head"><span>연초 이후</span><span>금액</span><span>변화율</span></div>
+ <div class="metric-row">
+   <span class="muted">투자자산 평가액 변화</span>
+   <b class="${(ytdInvValueChange??0)>=0?"pos":"neg"}">${ym?signedMoney(ytdInvValueChange):"-"}</b>
+   <b class="${(ytdInvValueRate??0)>=0?"pos":"neg"}">${ym?signedPct(ytdInvValueRate):"-"}</b>
+ </div>
+ <div class="metric-row">
+   <span class="muted">추가 투자원금</span>
+   <b class="${(principalAdded??0)>=0?"pos":"neg"}">${ym?signedMoney(principalAdded):"-"}</b>
+   <span>-</span>
+ </div>`;
+
+ holdingAccounts.innerHTML=["pension","isa","toss"].map(k=>renderHoldingAccount(k)).join("");
+}
+
+function renderHoldingAccount(k){
+
+  const a=
+    ACCOUNTS[k];
+
+  const arr=
+    holdings[k] || [];
+
+
+  return `
+  <div class="account-block">
+
+    <div class="account-title">
+
+      <b>${a.name}</b>
+
+      <div
+        style="
+          display:flex;
+          gap:6px;
+          flex-wrap:wrap;
+          justify-content:flex-end
+        "
+      >
+
+        ${
+          k==="pension" ||
+          k==="isa"
+          ?
+          `
+          <button
+            class="btn gray small"
+            onclick="refreshKoreanPrices('${k}',this)"
+          >
+            ↻ 현재가
+          </button>
+          `
+          :
+          ""
+        }
+
+
+        ${
+          k==="toss"
+          ?
+          `
+          <button
+            class="btn gray small"
+            onclick="refreshTossPrices(this)"
+          >
+            ↻ 현재가
+          </button>
+          `
+          :
+          ""
+        }
+
+
+        <button
+          class="btn gray small"
+          onclick="manualSync('${k}')"
+        >
+          합계 반영
+        </button>
+
+
+        <button
+          class="btn small"
+          onclick="openHoldingModal('${k}',-1)"
+        >
+          + 종목 추가
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div
+        class="row"
+        style="
+          padding-bottom:10px;
+          border-bottom:1px solid #edf0f4
+        "
+      >
+
+        <span class="muted">
+          종목 평가금액 합계
+        </span>
+
+        <b>
+          ${money(
+            holdingValueTotal(k)
+          )}
+        </b>
+
+      </div>
+
+
+      ${
+        arr.length
+        ?
+        arr
+          .map(
+            (h,i)=>
+              holdingRow(
+                k,
+                h,
+                i
+              )
+          )
+          .join("")
+        :
+        `
+        <div
+          class="muted"
+          style="padding-top:12px"
+        >
+          등록된 종목이 없습니다.
+        </div>
+        `
+      }
+
+    </div>
+
+  </div>
+  `;
+
+}
+
+function holdingRow(
+  account,
+  h,
+  i
+){
+
+  const r=
+    pctFromHolding(h);
+
+
+  const auto=
+    !!h.ticker;
+
+
+  return `
+  <div class="holding">
+
+    <div class="row">
+
+      <div>
+
+        <b>
+          ${h.name}
+        </b>
+
+        <span
+          class="pill"
+          style="margin-left:5px"
+        >
+          ${auto ? "자동" : "수동"}
+        </span>
+
+
+        <div class="muted">
+
+          ${
+            h.qty!=null
+            ?
+            `보유 ${h.qty}주`
+            :
+            "현금성 자산"
+          }
+
+          ${
+            r!=null
+            ?
+            ` ·
+            <span
+              class="${
+                r>=0
+                ?
+                "pos"
+                :
+                "neg"
+              }"
+            >
+              ${pct(r)}
+            </span>
+            `
+            :
+            ""
+          }
+
+        </div>
+
+      </div>
+
+
+      <b>
+        ${money(h.value)}
+      </b>
+
+    </div>
+
+
+    ${
+      h.avg!=null
+      ?
+      `
+      <div
+        class="muted"
+        style="margin-top:4px"
+      >
+
+        평균매수가
+        ${money(h.avg)}
+
+        · 현재가
+        ${money(h.current)}
+
+      </div>
+      `
+      :
+      ""
+    }
+
+
+    ${
+      h.ticker
+      ?
+      `
+      <div
+        class="muted"
+        style="margin-top:3px"
+      >
+        시세코드 ${h.ticker}
+      </div>
+      `
+      :
+      ""
+    }
+
+
+    <div class="holding-actions">
+
+      <button
+        class="btn gray small"
+        onclick="
+          openHoldingModal(
+            '${account}',
+            ${i}
+          )
+        "
+      >
+        수정
+      </button>
+
+
+      <button
+        class="btn danger small"
+        onclick="
+          deleteHolding(
+            '${account}',
+            ${i}
+          )
+        "
+      >
+        삭제
+      </button>
+
+    </div>
+
+  </div>
+  `;
+
+}
+
+async function refreshTossPrices(){
+
+  const buttonEventTarget =
+    event?.target || null;
+
+  if(buttonEventTarget){
+    buttonEventTarget.disabled=true;
+    buttonEventTarget.textContent="불러오는 중...";
+  }
+
+  try{
+
+    const items =
+      (holdings.toss || [])
+      .filter(h=>h.ticker);
+
+    if(!items.length){
+      alert("자동조회할 티커가 없습니다.");
+      return;
+    }
+
+    const symbols=
+      items
+      .map(h=>h.ticker)
+      .join(",");
+
+    const [
+      quoteResponse,
+      fxResponse
+    ]=await Promise.all([
+      fetch(
+        "/api/quotes?symbols="+
+        encodeURIComponent(symbols)
+      ),
+      fetch("/api/usdkrw")
+    ]);
+
+    if(
+      !quoteResponse.ok ||
+      !fxResponse.ok
+    ){
+      throw new Error(
+        "서버에서 시세를 불러오지 못했습니다."
+      );
+    }
+
+    const quoteData=
+      await quoteResponse.json();
+
+    const fxData=
+      await fxResponse.json();
+
+    const usdkrw=
+      Number(fxData.rate);
+
+    if(
+      !Number.isFinite(usdkrw) ||
+      usdkrw<=0
+    ){
+      throw new Error(
+        "원달러 환율을 확인할 수 없습니다."
+      );
+    }
+
+    const priceMap={};
+
+    for(
+      const item
+      of quoteData.items || []
+    ){
+
+      if(
+        item.ok &&
+        Number.isFinite(
+          Number(item.price)
+        )
+      ){
+
+        priceMap[item.symbol]=
+          Number(item.price);
+
+      }
+
+    }
+
+    let updated=0;
+
+    for(
+      const h
+      of holdings.toss || []
+    ){
+
+      if(
+        !h.ticker ||
+        !priceMap[h.ticker]
+      ){
+        continue;
+      }
+
+      const usdPrice=
+        priceMap[h.ticker];
+
+      const krwPrice=
+        usdPrice*usdkrw;
+
+      h.current=
+        Math.round(krwPrice);
+
+      if(
+        h.qty!=null &&
+        Number.isFinite(
+          Number(h.qty)
+        )
+      ){
+
+        h.value=
+          Math.round(
+            Number(h.qty)*
+            krwPrice
+          );
+
+      }
+
+      updated++;
+
+    }
+
+    localStorage.setItem(
+      HOLD_KEY,
+      JSON.stringify(holdings)
+    );
+
+
+    renderAll();
+
+    const msg=
+      document.getElementById(
+        "syncMsg"
+      );
+
+    if(msg){
+
+      msg.innerHTML=`
+        <div class="notice" style="margin-bottom:12px">
+          토스증권 ${updated}개 종목의 현재가를 갱신했습니다.<br>
+          적용 환율: 1달러 = ${Math.round(usdkrw).toLocaleString("ko-KR")}원
+        </div>
+      `;
+
+    }
+
+  }
+
+  catch(error){
+
+    console.error(
+      "refreshTossPrices:",
+      error
+    );
+
+    alert(
+      "현재가 갱신에 실패했습니다.\n"+
+      error.message
+    );
+
+  }
+
+  finally{
+
+    if(buttonEventTarget){
+      buttonEventTarget.disabled=false;
+      buttonEventTarget.textContent="↻ 현재가";
+    }
+
+  }
+
+}
+async function refreshKoreanPrices(
+  account,
+  button=null
+){
+
+  if(
+    account!=="pension" &&
+    account!=="isa"
+  ){
+    return;
+  }
+
+
+  const arr=
+    holdings[account] || [];
+
+
+  const autoItems=
+    arr.filter(
+      h=>h.ticker
+    );
+
+
+  if(
+    !autoItems.length
+  ){
+
+    alert(
+      "자동조회 가능한 종목이 없습니다."
+    );
+
+    return;
+
+  }
+
+
+  if(button){
+
+    button.disabled=true;
+
+    button.textContent=
+      "불러오는 중...";
+
+  }
+
+
+  try{
+
+    const symbols=
+      [
+        ...new Set(
+          autoItems.map(
+            h=>h.ticker
+          )
+        )
+      ];
+
+
+    const response=
+      await fetch(
+        "/api/quotes?symbols="+
+        encodeURIComponent(
+          symbols.join(",")
+        ),
+        {
+          cache:"no-store"
+        }
+      );
+
+
+    if(!response.ok){
+
+      throw new Error(
+        "시세 서버 응답 오류"
+      );
+
+    }
+
+
+    const payload=
+      await response.json();
+
+
+    const priceMap={};
+
+    const failed=[];
+
+
+    for(
+      const item
+      of payload.items || []
+    ){
+
+      if(
+        item.ok &&
+        Number.isFinite(
+          Number(item.price)
+        )
+      ){
+
+        priceMap[item.symbol]=
+          Number(item.price);
+
+      }else{
+
+        failed.push(
+          item.symbol
+        );
+
+      }
+
+    }
+
+
+    let updated=0;
+
+
+    for(
+      const h
+      of arr
+    ){
+
+      if(
+        !h.ticker ||
+        priceMap[h.ticker]==null
+      ){
+
+        /*
+        조회 실패 종목은
+        기존 수동값 유지
+        */
+
+        continue;
+
+      }
+
+
+      const price=
+        priceMap[h.ticker];
+
+
+      /*
+      국내 종목은 이미 KRW이므로
+      환율 변환 필요 없음
+      */
+
+      h.current=
+        Math.round(price);
+
+
+      if(
+        h.qty!=null &&
+        Number.isFinite(
+          Number(h.qty)
+        )
+      ){
+
+        h.value=
+          Math.round(
+            Number(h.qty) *
+            price
+          );
+
+      }
+
+
+      updated++;
+
+    }
+
+
+    localStorage.setItem(
+      HOLD_KEY,
+      JSON.stringify(holdings)
+    );
+
+
+
+
+    renderAll();
+
+
+    const msg=
+      document.getElementById(
+        "syncMsg"
+      );
+
+
+    if(msg){
+
+      let failedText="";
+
+
+      if(failed.length){
+
+        failedText=
+          `<br>
+          조회 실패:
+          ${failed.join(", ")}
+          <br>
+          실패 종목은 기존 입력값을 유지했습니다.`;
+
+      }
+
+
+      msg.innerHTML=`
+
+        <div
+          class="notice"
+          style="margin-bottom:12px"
+        >
+
+          ${ACCOUNTS[account].name}
+          자동시세 ${updated}개 종목을
+          갱신했습니다.
+
+          ${failedText}
+
+        </div>
+
+      `;
+
+    }
+
+  }
+
+  catch(error){
+
+    console.error(
+      "refreshKoreanPrices:",
+      error
+    );
+
+
+    alert(
+      "현재가 갱신에 실패했습니다.\n"+
+      error.message
+    );
+
+  }
+
+  finally{
+
+    if(button){
+
+      button.disabled=false;
+
+      button.textContent=
+        "↻ 현재가";
+
+    }
+
+  }
+
+}
+function manualSync(account){
+ syncHoldingAccountToLatestMonth(account);
+ renderAll();
+}
+
+function openHoldingModal(account,index){
+ const editing=index>=0;
+ const h=editing?holdings[account][index]:{name:"",qty:"",avg:"",current:"",value:""};
+ modalTitle.textContent=editing?"종목 수정":"종목 추가";
+ modalContent.innerHTML=`
+ <label>계좌</label>
+ <select id="hAccount">
+   <option value="pension" ${account==="pension"?"selected":""}>연금저축</option>
+   <option value="isa" ${account==="isa"?"selected":""}>ISA</option>
+   <option value="toss" ${account==="toss"?"selected":""}>토스증권</option>
+ </select>
+ <label>종목명</label><input id="hName" value="${escapeAttr(h.name)}" placeholder="예: QQQM">
+ <div class="form-grid">
+   <div><label>보유수량</label><input id="hQty" type="number" step="any" value="${h.qty??""}" placeholder="20"></div>
+   <div><label>평균매수가</label><input id="hAvg" type="number" step="any" value="${h.avg??""}" placeholder="397118"></div>
+ </div>
+ <div class="form-grid">
+   <div><label>현재가</label><input id="hCurrent" type="number" step="any" value="${h.current??""}" placeholder="407188"></div>
+   <div><label>평가금액</label><input id="hValue" type="number" step="any" value="${h.value??""}" placeholder="8143760"></div>
+ </div>
+ <div class="notice" style="margin-top:12px">보유수량과 현재가를 입력하면 평가금액을 자동 계산할 수 있습니다. 현금/예수금은 수량·가격을 비우고 평가금액만 입력하면 됩니다.</div>
+ <button class="btn" onclick="saveHolding('${account}',${index})">${editing?"수정 저장":"추가하기"}</button>`;
+ modalBg.classList.remove("hidden");
+ setTimeout(()=>{
+   const q=document.getElementById("hQty"),c=document.getElementById("hCurrent"),v=document.getElementById("hValue");
+   const auto=()=>{if(q.value&&c.value)v.value=Math.round(Number(q.value)*Number(c.value))};
+   q.addEventListener("input",auto); c.addEventListener("input",auto);
+ },0);
+}
+
+function escapeAttr(s){return String(s??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function closeModal(){modalBg.classList.add("hidden")}
+
+function saveHolding(originalAccount,index){
+ const newAccount=document.getElementById("hAccount").value;
+ const obj={
+  name:document.getElementById("hName").value.trim(),
+  qty:toNullableNumber(document.getElementById("hQty").value),
+  avg:toNullableNumber(document.getElementById("hAvg").value),
+  current:toNullableNumber(document.getElementById("hCurrent").value),
+  value:Number(document.getElementById("hValue").value)||0
+ };
+ if(!obj.name){alert("종목명을 입력해주세요.");return}
+ if(index>=0){
+   holdings[originalAccount].splice(index,1);
+   holdings[newAccount]=holdings[newAccount]||[];
+   holdings[newAccount].push(obj);
+ }else{
+   holdings[newAccount]=holdings[newAccount]||[];
+   holdings[newAccount].push(obj);
+ }
+ localStorage.setItem(HOLD_KEY,JSON.stringify(holdings));
+ syncHoldingAccountToLatestMonth(newAccount);
+ if(index>=0 && originalAccount!==newAccount){
+   syncHoldingAccountToLatestMonth(originalAccount);
+ }
+ closeModal();
+ renderAll();
+}
+
+function toNullableNumber(v){return v===""?null:Number(v)}
+function deleteHolding(account,index){
+ if(confirm("이 종목을 삭제할까요?")){
+   holdings[account].splice(index,1);
+   localStorage.setItem(HOLD_KEY,JSON.stringify(holdings));
+   syncHoldingAccountToLatestMonth(account);
+   renderAll();
+ }
+}
+
+
+
+async function refreshMarketData(manual=false){
+  const status=document.getElementById("marketStatus");
+  if(status) status.textContent="시장지수를 불러오는 중...";
+
+  try{
+    const res=await fetch("/api/market-history",{cache:"no-store"});
+    if(!res.ok) throw new Error("서버 응답 오류");
+
+    const payload=await res.json();
+    if(!payload?.months) throw new Error("데이터 형식 오류");
+
+    MARKET_DATA={...MARKET_DATA,...payload.months};
+
+    localStorage.setItem(
+      MARKET_STORE_KEY,
+      JSON.stringify(MARKET_DATA)
+    );
+
+    const meta={
+      updatedAt:payload.updatedAt||new Date().toISOString(),
+      source:payload.source||"시장지수 API"
+    };
+
+    localStorage.setItem(
+      MARKET_META_KEY,
+      JSON.stringify(meta)
+    );
+
+    if(status){
+      status.textContent=
+        `자동 업데이트 완료 · ${new Date(meta.updatedAt).toLocaleString("ko-KR")} · ${meta.source}`;
+    }
+
+    renderMarket();
+  }catch(err){
+    const meta=JSON.parse(localStorage.getItem(MARKET_META_KEY)||"null");
+
+    if(status){
+      status.textContent=meta
+        ? `자동 업데이트 실패 · 마지막 저장 데이터 ${new Date(meta.updatedAt).toLocaleString("ko-KR")} 사용`
+        : "자동 업데이트 실패 · 앱 기본 데이터를 사용합니다.";
+    }
+
+    if(manual){
+      alert("시장지수 자동 업데이트에 실패했습니다. 기존 저장값을 사용합니다.");
+    }
+  }
+}
+
+function marketReturn(indexKey,k){
+ const row=MARKET_DATA[k];
+ if(!row) return null;
+ const base=MARKET_BASE[indexKey];
+ return base ? (Number(row[indexKey])/base)-1 : null;
+}
+
+function portfolioSimpleReturn(k){
+ const m=data[k];
+ if(!m) return null;
+ const p=investmentPrincipal(m);
+ const v=investmentValue(m);
+ return p ? (v-p)/p : null;
+}
+
+function fmtPercent(n){
+ return n==null?"-":`${n>=0?"+":""}${(n*100).toFixed(2)}%`;
+}
+
+function renderMarket(){
+ const marketChart = document.getElementById('marketChart');
+ const commonKeys=validKeys().filter(k=>MARKET_DATA[k]);
+ if(!commonKeys.length){
+   marketMine.textContent=marketSP.textContent=marketNDX.textContent=marketKospi.textContent="-";
+   marketChart.innerHTML="";
+   marketTableBody.innerHTML='<tr><td colspan="5">비교 가능한 데이터가 없습니다.</td></tr>';
+   return;
+ }
+
+ const latest=commonKeys.at(-1);
+ const mine=portfolioSimpleReturn(latest);
+ const sp=marketReturn("sp500",latest);
+ const ndx=marketReturn("nasdaq100",latest);
+ const kospi=marketReturn("kospi",latest);
+
+ const applyMetric=(el,v)=>{
+   el.textContent=fmtPercent(v);
+   el.className="v "+(v==null||v>=0?"pos":"neg");
+ };
+ applyMetric(marketMine,mine);
+ applyMetric(marketSP,sp);
+ applyMetric(marketNDX,ndx);
+ applyMetric(marketKospi,kospi);
+
+ const series=[
+   {key:"mine",label:"내 투자손익률",color:"#172033",values:commonKeys.map(portfolioSimpleReturn)},
+   {key:"sp",label:"S&P500",color:"#1769e0",values:commonKeys.map(k=>marketReturn("sp500",k))},
+   {key:"ndx",label:"나스닥100",color:"#8b5cf6",values:commonKeys.map(k=>marketReturn("nasdaq100",k))},
+   {key:"kospi",label:"코스피",color:"#12a594",values:commonKeys.map(k=>marketReturn("kospi",k))}
+ ];
+
+ const W=420,H=230,L=48,R=10,T=12,B=30,plotW=W-L-R,plotH=H-T-B;
+ const all=series.flatMap(s=>s.values.filter(v=>v!=null));
+ let minY=Math.min(...all,0), maxY=Math.max(...all,0);
+ const pad=Math.max((maxY-minY)*0.12,0.03);
+ minY-=pad; maxY+=pad;
+ const x=i=>L+(commonKeys.length===1?plotW/2:i*plotW/(commonKeys.length-1));
+ const y=v=>T+(maxY-v)/(maxY-minY)*plotH;
+
+ let out="";
+ for(let g=0;g<=4;g++){
+   const value=maxY-(maxY-minY)*(g/4);
+   const yy=T+plotH*g/4;
+   out+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e8edf3" stroke-width="1"/>`;
+   out+=`<text x="${L-5}" y="${yy+3}" text-anchor="end" font-size="9" fill="#8a95a5">${(value*100).toFixed(0)}%</text>`;
+ }
+ if(minY<0 && maxY>0){
+   const zy=y(0);
+   out+=`<line x1="${L}" y1="${zy}" x2="${W-R}" y2="${zy}" stroke="#aeb7c2" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+ }
+
+ for(const s of series){
+   const pts=s.values.map((v,i)=>v==null?null:`${x(i)},${y(v)}`).filter(Boolean).join(" ");
+   out+=`<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${s.key==="mine"?3:2}" stroke-linecap="round" stroke-linejoin="round"/>`;
+   s.values.forEach((v,i)=>{
+     if(v==null)return;
+     out+=`<circle cx="${x(i)}" cy="${y(v)}" r="${s.key==="mine"?3.2:2.5}" fill="${s.color}">
+       <title>${s.label} · ${commonKeys[i]} · ${fmtPercent(v)}</title>
+     </circle>`;
+   });
+ }
+ commonKeys.forEach((k,i)=>{
+   out+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#7b8797">${Number(k.slice(5))}월</text>`;
+ });
+ marketChart.innerHTML=out;
+
+ marketTableBody.innerHTML=commonKeys.slice().reverse().map(k=>{
+   const vals=[
+     portfolioSimpleReturn(k),
+     marketReturn("sp500",k),
+     marketReturn("nasdaq100",k),
+     marketReturn("kospi",k)
+   ];
+   return `<tr>
+     <td>${Number(k.slice(5))}월</td>
+     ${vals.map(v=>`<td class="${v==null?"":v>=0?"pos":"neg"}">${fmtPercent(v)}</td>`).join("")}
+   </tr>`;
+ }).join("");
+}
+
+function monthAfter(k){
+ const [y,m]=k.split("-").map(Number);
+ const d=new Date(y,m,1);
+ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+
+function labelFromKey(k){
+ const [y,m]=k.split("-").map(Number);
+ return `${y}년 ${m}월`;
+}
+
+let currentInputKey=null;
+
+function renderMonthly(){
+ const latest=latestKey();
+ currentInputKey=monthAfter(latest);
+
+ const previous=data[latest];
+ const saved=data[currentInputKey];
+
+ // 새 달은 전월 값을 기본값으로 넣어 둡니다.
+ // 매달 바뀐 금액만 수정하면 됩니다.
+ const formData=saved || {
+   label:labelFromKey(currentInputKey),
+   pension:{invest:previous?.pension?.invest??"",value:previous?.pension?.value??""},
+   isa:{invest:previous?.isa?.invest??"",value:previous?.isa?.value??""},
+   toss:{invest:previous?.toss?.invest??"",value:previous?.toss?.value??""},
+   savings:{invest:previous?.savings?.invest??"",value:previous?.savings?.value??""}
+ };
+
+ updateTitle.textContent=`${labelFromKey(currentInputKey)} 업데이트`;
+ updateButton.textContent=`${Number(currentInputKey.slice(5))}월 저장하기`;
+
+ monthlyForm.innerHTML=`
+ <div class="notice">전월 금액을 자동으로 불러왔습니다. 이번 달에 달라진 금액만 수정하세요.</div>
+ `+Object.entries(ACCOUNTS).map(([k,a])=>`<div class="card"><b>${a.name}</b>
+ <label>투자금액 / 납입금액</label><input id="${k}_invest" type="number" value="${formData[k]?.invest??""}">
+ <label>평가금액</label><input id="${k}_value" type="number" value="${formData[k]?.value??""}"></div>`).join("");
+
+ const allKeys=keys();
+ history.innerHTML=allKeys.slice().reverse().map(k=>{
+   const mm=data[k];
+   const valid=isValidMonth(k);
+   const previousValid=valid?prevKey(k):null;
+   const d=previousValid?total(mm)-total(data[previousValid]):null;
+   return `<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f4">
+     <div><b>${mm.label}</b>${!valid?'<div class="neg muted">미완성 입력 · 대시보드 제외</div>':''}</div>
+     <div style="text-align:right">
+       <div>${money(total(mm))}</div>
+       <div class="muted ${d==null?"":d>=0?"pos":"neg"}">
+         ${d==null?"":`${d>=0?"+":""}${money(d)}`}
+       </div>
+     </div>
+   </div>`;
+ }).join("");
+}
+
+function saveNextMonth(){
+ const obj={label:labelFromKey(currentInputKey)};
+ const missing=[];
+
+ for(const k of Object.keys(ACCOUNTS)){
+   const investRaw=document.getElementById(k+"_invest").value.trim();
+   const valueRaw=document.getElementById(k+"_value").value.trim();
+
+   if(investRaw==="" || valueRaw===""){
+     missing.push(ACCOUNTS[k].name);
+   }
+
+   obj[k]={
+     invest:Number(investRaw)||0,
+     value:Number(valueRaw)||0
+   };
+ }
+
+ if(missing.length){
+   alert("다음 계좌의 투자금액 또는 평가금액이 비어 있습니다:\\n"+missing.join(", "));
+   return;
+ }
+
+ const totalValue=total(obj);
+ if(totalValue<=0){
+   alert("평가금액 합계가 0원입니다. 저장하지 않았습니다.");
+   return;
+ }
+
+ data[currentInputKey]=obj;
+ localStorage.setItem(MONTH_KEY,JSON.stringify(data));
+
+ // 투자계좌 평가금액은 현재 등록된 종목 합계를 기준으로 자동 보정합니다.
+ ["pension","isa","toss"].forEach(account=>{
+   data[currentInputKey][account].value=holdingValueTotal(account);
+ });
+ localStorage.setItem(MONTH_KEY,JSON.stringify(data));
+
+ const savedLabel=labelFromKey(currentInputKey);
+ saveMsg.innerHTML=`<div class="notice" style="margin-top:12px">${savedLabel} 데이터가 저장되었습니다. 다음 달 입력 화면으로 자동 이동합니다.</div>`;
+
+ renderAll();
+}
+
+function clearNextMonthForm(){
+ for(const k of Object.keys(ACCOUNTS)){
+   document.getElementById(k+"_invest").value="";
+   document.getElementById(k+"_value").value="";
+ }
+ saveMsg.innerHTML="";
+}
+
+function deleteLatestMonth(){
+ const all=keys();
+ const last=all.at(-1);
+ if(!last || last==="2026-08"){
+   alert("삭제할 추가 월 기록이 없습니다.");
+   return;
+ }
+ if(confirm(`${labelFromKey(last)} 기록을 삭제할까요?`)){
+   delete data[last];
+   localStorage.setItem(MONTH_KEY,JSON.stringify(data));
+   saveMsg.innerHTML='<div class="notice" style="margin-top:12px">최근 월 기록을 삭제했습니다.</div>';
+   renderAll();
+ }
+}
+
+function renderAll(){renderHome();renderAssets();renderInvest();renderMarket();renderMonthly()}
+function exportMyAssetBackup(){
+
+  try{
+
+    const storage = {};
+
+    /*
+    MY ASSET 관련 localStorage만 백업
+    */
+
+    for(
+      let i=0;
+      i<localStorage.length;
+      i++
+    ){
+
+      const key=
+        localStorage.key(i);
+
+      if(
+        key &&
+        key.startsWith(
+          "my_asset_"
+        )
+      ){
+
+        storage[key]=
+          localStorage.getItem(
+            key
+          );
+
+      }
+
+    }
+
+
+    const backup={
+
+      app:
+        "MY ASSET",
+
+      version:
+        "1.0",
+
+      createdAt:
+        new Date()
+          .toISOString(),
+
+      storage
+
+    };
+
+
+    const json=
+      JSON.stringify(
+        backup,
+        null,
+        2
+      );
+
+
+    const blob=
+      new Blob(
+        [json],
+        {
+          type:
+            "application/json"
+        }
+      );
+
+
+    const url=
+      URL.createObjectURL(
+        blob
+      );
+
+
+    const a=
+      document.createElement(
+        "a"
+      );
+
+
+    const now=
+      new Date();
+
+
+    const dateText=
+      now.getFullYear()+
+      "-"+
+      String(
+        now.getMonth()+1
+      ).padStart(2,"0")+
+      "-"+
+      String(
+        now.getDate()
+      ).padStart(2,"0");
+
+
+    a.href=url;
+
+    a.download=
+      "MY_ASSET_BACKUP_"+
+      dateText+
+      ".json";
+
+
+    document.body
+      .appendChild(a);
+
+
+    a.click();
+
+
+    a.remove();
+
+
+    URL.revokeObjectURL(
+      url
+    );
+
+
+    const msg=
+      document.getElementById(
+        "backupMessage"
+      );
+
+
+    if(msg){
+
+      msg.textContent=
+        "백업파일을 생성했습니다. 안전한 곳에 보관해주세요.";
+
+    }
+
+  }
+
+  catch(error){
+
+    console.error(
+      "backup error:",
+      error
+    );
+
+
+    alert(
+      "백업파일 생성에 실패했습니다."
+    );
+
+  }
+
+}
+function importMyAssetBackup(event){
+  if(window.MyAssetSync) void window.MyAssetSync.restore(event);
+  else alert('앱 준비가 끝난 후 다시 시도해주세요.');
+}
+renderAll();
+renderGoal();
+refreshMarketData(false);
+
+// The original app keeps its global functions for existing inline buttons.
+// Only the synchronization adapter changes the three application state objects.
+for (const [key, value] of [[MONTH_KEY,data],[HOLD_KEY,holdings],[GOAL_KEY,goal]]) {
+  if(localStorage.getItem(key)===null) localStorage.setItem(key,JSON.stringify(value));
+}
+window.myAssetBridge = {
+  apply(storage) {
+    const keys=[MONTH_KEY,HOLD_KEY,GOAL_KEY];
+    const values=keys.map(k=>JSON.parse(storage[k]));
+    const before=keys.map(k=>localStorage.getItem(k));
+    try { keys.forEach(k=>localStorage.setItem(k,storage[k])); }
+    catch(error) {
+      keys.forEach((k,i)=>{ if(before[i]===null) localStorage.removeItem(k); else localStorage.setItem(k,before[i]); });
+      throw error;
+    }
+    [data,holdings,goal]=values;
+    closeModal(); renderAll(); renderGoal();
+  }
+};
