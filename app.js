@@ -92,6 +92,12 @@ let holdings=JSON.parse(localStorage.getItem(HOLD_KEY)||"null") || structuredClo
   "TIGER 미국나스닥100":"133690.KS",
   "RISE 미국S&P500":"379780.KS",
   "ACE KRX금현물":"411060.KS",
+  "ACE 미국빅테크TOP7":"465580.KS",
+  "ACE 미국빅테크TOP7 Plus":"465580.KS",
+  "TIGER 미국필라델피아반도체":"381180.KS",
+  "TIGER 미국필라델피아반도체나스닥":"381180.KS",
+  "TIME 글로벌휴머노이드로봇산업":"0185L0.KS",
+  "TIME 글로벌휴머노이드로봇산업액티브":"0185L0.KS",
 
   /*
   아래 ETF들은 Yahoo 지원 여부를
@@ -128,7 +134,7 @@ for(
   ){
 
     if(
-      !h.ticker &&
+      h.autoPrice!==false && !h.ticker &&
       AUTO_TICKERS[h.name]
     ){
 
@@ -159,7 +165,7 @@ localStorage.setItem(
 };
 
 for(const h of holdings.toss || []){
-  if(!h.ticker && TICKER_MAP[h.name]){
+  if(h.autoPrice!==false && !h.ticker && TICKER_MAP[h.name]){
     h.ticker=TICKER_MAP[h.name];
   }
 }
@@ -1619,7 +1625,7 @@ function holdingRow(
 
 
   const auto=
-    !!h.ticker;
+    !!h.ticker && h.autoPrice!==false;
 
 
   return `
@@ -1630,7 +1636,7 @@ function holdingRow(
       <div>
 
         <b>
-          ${h.name}
+          ${escapeAttr(h.name)}
         </b>
 
         <span
@@ -1713,7 +1719,7 @@ function holdingRow(
         class="muted"
         style="margin-top:3px"
       >
-        시세코드 ${h.ticker}
+        시세코드 ${escapeAttr(h.ticker)}
       </div>
       `
       :
@@ -1721,6 +1727,7 @@ function holdingRow(
     }
 
 
+    ${quoteDescription(h)}
     <div class="holding-actions">
 
       <button
@@ -1755,438 +1762,92 @@ function holdingRow(
 
 }
 
-async function refreshTossPrices(){
-
-  const buttonEventTarget =
-    event?.target || null;
-
-  if(buttonEventTarget){
-    buttonEventTarget.disabled=true;
-    buttonEventTarget.textContent="불러오는 중...";
-  }
-
-  try{
-
-    const items =
-      (holdings.toss || [])
-      .filter(h=>h.ticker);
-
-    if(!items.length){
-      alert("자동조회할 티커가 없습니다.");
-      return;
-    }
-
-    const symbols=
-      items
-      .map(h=>h.ticker)
-      .join(",");
-
-    const [
-      quoteResponse,
-      fxResponse
-    ]=await Promise.all([
-      fetch(
-        "/api/quotes?symbols="+
-        encodeURIComponent(symbols)
-      ),
-      fetch("/api/usdkrw")
-    ]);
-
-    if(
-      !quoteResponse.ok ||
-      !fxResponse.ok
-    ){
-      throw new Error(
-        "서버에서 시세를 불러오지 못했습니다."
-      );
-    }
-
-    const quoteData=
-      await quoteResponse.json();
-
-    const fxData=
-      await fxResponse.json();
-
-    const usdkrw=
-      Number(fxData.rate);
-
-    if(
-      !Number.isFinite(usdkrw) ||
-      usdkrw<=0
-    ){
-      throw new Error(
-        "원달러 환율을 확인할 수 없습니다."
-      );
-    }
-
-    const priceMap={};
-
-    for(
-      const item
-      of quoteData.items || []
-    ){
-
-      if(
-        item.ok &&
-        Number.isFinite(
-          Number(item.price)
-        )
-      ){
-
-        priceMap[item.symbol]=
-          Number(item.price);
-
-      }
-
-    }
-
-    let updated=0;
-
-    for(
-      const h
-      of holdings.toss || []
-    ){
-
-      if(
-        !h.ticker ||
-        !priceMap[h.ticker]
-      ){
-        continue;
-      }
-
-      const usdPrice=
-        priceMap[h.ticker];
-
-      const krwPrice=
-        usdPrice*usdkrw;
-
-      h.current=
-        Math.round(krwPrice);
-
-      if(
-        h.qty!=null &&
-        Number.isFinite(
-          Number(h.qty)
-        )
-      ){
-
-        h.value=
-          Math.round(
-            Number(h.qty)*
-            krwPrice
-          );
-
-      }
-
-      updated++;
-
-    }
-
-    localStorage.setItem(
-      HOLD_KEY,
-      JSON.stringify(holdings)
-    );
-
-
-    renderAll();
-
-    const msg=
-      document.getElementById(
-        "syncMsg"
-      );
-
-    if(msg){
-
-      msg.innerHTML=`
-        <div class="notice" style="margin-bottom:12px">
-          토스증권 ${updated}개 종목의 현재가를 갱신했습니다.<br>
-          적용 환율: 1달러 = ${Math.round(usdkrw).toLocaleString("ko-KR")}원
-        </div>
-      `;
-
-    }
-
-  }
-
-  catch(error){
-
-    console.error(
-      "refreshTossPrices:",
-      error
-    );
-
-    alert(
-      "현재가 갱신에 실패했습니다.\n"+
-      error.message
-    );
-
-  }
-
-  finally{
-
-    if(buttonEventTarget){
-      buttonEventTarget.disabled=false;
-      buttonEventTarget.textContent="↻ 현재가";
-    }
-
-  }
-
+const quoteBusy = new Set();
+function quoteTime(value){
+ const date=new Date(value);
+ return Number.isFinite(date.getTime()) ? date.toLocaleString('ko-KR') : '확인 불가';
 }
-async function refreshKoreanPrices(
-  account,
-  button=null
-){
-
-  if(
-    account!=="pension" &&
-    account!=="isa"
-  ){
-    return;
-  }
-
-
-  const arr=
-    holdings[account] || [];
-
-
-  const autoItems=
-    arr.filter(
-      h=>h.ticker
-    );
-
-
-  if(
-    !autoItems.length
-  ){
-
-    alert(
-      "자동조회 가능한 종목이 없습니다."
-    );
-
-    return;
-
-  }
-
-
-  if(button){
-
-    button.disabled=true;
-
-    button.textContent=
-      "불러오는 중...";
-
-  }
-
-
-  try{
-
-    const symbols=
-      [
-        ...new Set(
-          autoItems.map(
-            h=>h.ticker
-          )
-        )
-      ];
-
-
-    const response=
-      await fetch(
-        "/api/quotes?symbols="+
-        encodeURIComponent(
-          symbols.join(",")
-        ),
-        {
-          cache:"no-store"
-        }
-      );
-
-
-    if(!response.ok){
-
-      throw new Error(
-        "시세 서버 응답 오류"
-      );
-
-    }
-
-
-    const payload=
-      await response.json();
-
-
-    const priceMap={};
-
-    const failed=[];
-
-
-    for(
-      const item
-      of payload.items || []
-    ){
-
-      if(
-        item.ok &&
-        Number.isFinite(
-          Number(item.price)
-        )
-      ){
-
-        priceMap[item.symbol]=
-          Number(item.price);
-
-      }else{
-
-        failed.push(
-          item.symbol
-        );
-
-      }
-
-    }
-
-
-    let updated=0;
-
-
-    for(
-      const h
-      of arr
-    ){
-
-      if(
-        !h.ticker ||
-        priceMap[h.ticker]==null
-      ){
-
-        /*
-        조회 실패 종목은
-        기존 수동값 유지
-        */
-
-        continue;
-
-      }
-
-
-      const price=
-        priceMap[h.ticker];
-
-
-      /*
-      국내 종목은 이미 KRW이므로
-      환율 변환 필요 없음
-      */
-
-      h.current=
-        Math.round(price);
-
-
-      if(
-        h.qty!=null &&
-        Number.isFinite(
-          Number(h.qty)
-        )
-      ){
-
-        h.value=
-          Math.round(
-            Number(h.qty) *
-            price
-          );
-
-      }
-
-
-      updated++;
-
-    }
-
-
-    localStorage.setItem(
-      HOLD_KEY,
-      JSON.stringify(holdings)
-    );
-
-
-
-
-    renderAll();
-
-
-    const msg=
-      document.getElementById(
-        "syncMsg"
-      );
-
-
-    if(msg){
-
-      let failedText="";
-
-
-      if(failed.length){
-
-        failedText=
-          `<br>
-          조회 실패:
-          ${failed.join(", ")}
-          <br>
-          실패 종목은 기존 입력값을 유지했습니다.`;
-
-      }
-
-
-      msg.innerHTML=`
-
-        <div
-          class="notice"
-          style="margin-bottom:12px"
-        >
-
-          ${ACCOUNTS[account].name}
-          자동시세 ${updated}개 종목을
-          갱신했습니다.
-
-          ${failedText}
-
-        </div>
-
-      `;
-
-    }
-
-  }
-
-  catch(error){
-
-    console.error(
-      "refreshKoreanPrices:",
-      error
-    );
-
-
-    alert(
-      "현재가 갱신에 실패했습니다.\n"+
-      error.message
-    );
-
-  }
-
-  finally{
-
-    if(button){
-
-      button.disabled=false;
-
-      button.textContent=
-        "↻ 현재가";
-
-    }
-
-  }
-
+function quoteDescription(h){
+ const q=h.quote;
+ const manual=h.autoPrice===false || !h.ticker;
+ return `<div class="muted" style="margin-top:5px;font-size:12px">
+ ${manual?'수동 입력':q?`시세 기준 ${escapeAttr(quoteTime(q.timestamp*1000))}<br>조회 ${escapeAttr(quoteTime(q.fetchedAt))} · Yahoo Finance (지연 가능)
+ ${q.currency==='USD'?`<br>원화 환산: $${q.price.toLocaleString('en-US',{maximumFractionDigits:4})} × ${q.fxRate.toLocaleString('ko-KR',{maximumFractionDigits:4})}원<br>환율 기준 ${escapeAttr(quoteTime(q.fxTimestamp*1000))}`:''}`:'아직 시세를 갱신하지 않았습니다.'}
+ ${h.quoteError?`<br><span style="color:#b45309">${escapeAttr(h.quoteError)} · 기존 입력값 유지</span>`:''}
+ </div>`;
 }
+async function quoteJSON(url){
+ const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(25000)});
+ if(!response.ok)throw new Error('시세 서버 응답 오류');
+ return response.json();
+}
+function refreshTossPrices(button=null){return refreshAccountPrices('toss',button)}
+function refreshKoreanPrices(account,button=null){return refreshAccountPrices(account,button)}
+async function refreshAccountPrices(account,button=null){
+ if(!['pension','isa','toss'].includes(account)||quoteBusy.has(account))return;
+ const original=holdings[account]||[];
+ const requested=original.filter(h=>h.ticker&&h.autoPrice!==false);
+ if(!requested.length){alert('자동조회할 시세코드가 없습니다. 종목 수정에서 코드를 입력해주세요.');return}
+ const versions=new Map(requested.map(h=>[h,JSON.stringify(h)]));
+ quoteBusy.add(account);
+ if(button){button.disabled=true;button.textContent='불러오는 중…'}
+ try{
+   const symbols=[...new Set(requested.map(h=>h.ticker.trim().toUpperCase()))];
+   const results=[];
+   for(let i=0;i<symbols.length;i+=50){
+     const payload=await quoteJSON('/api/quotes?symbols='+encodeURIComponent(symbols.slice(i,i+50).join(',')));
+     if(!Array.isArray(payload.items))throw new Error('시세 응답 형식이 올바르지 않습니다.');
+     results.push(...payload.items);
+   }
+   const map=new Map(results.map(item=>[String(item.symbol).toUpperCase(),item]));
+   let fx=null;
+   if(results.some(item=>item.ok&&item.currency==='USD')){
+     try{fx=await quoteJSON('/api/usdkrw')}catch{ /* USD rows will retain previous values. */ }
+   }
+   // Remote sync or editing may replace the account while the request is pending.
+   if(holdings[account]!==original)throw new Error('조회 중 자산 데이터가 변경되었습니다. 다시 조회해주세요.');
+   let updated=0, skipped=0;
+   const failed=[];
+   const next=original.map(h=>{
+     if(!versions.has(h))return h;
+     if(versions.get(h)!==JSON.stringify(h)){skipped++;return h}
+     const item=map.get(h.ticker.trim().toUpperCase());
+     let reason=null;
+     const positive=n=>typeof n==='number'&&Number.isFinite(n)&&n>0;
+     if(!item?.ok||!positive(item.price)||!positive(item.timestamp))reason='시세 조회 실패';
+     else if(!['USD','KRW'].includes(item.currency))reason='지원하지 않는 통화';
+     else if(item.timestamp>Date.now()/1000+300)reason='시세 시각 확인 필요';
+     else if(item.currency==='USD'&&(!fx||!positive(fx.rate)||!positive(fx.timestamp)||fx.currency!=='KRW'||fx.timestamp>Date.now()/1000+300))reason='환율 조회 실패';
+     else if(h.qty==null||typeof h.qty!=='number'||!Number.isFinite(h.qty)||h.qty<0)reason='보유수량 확인 필요';
+     // Reject a response older than an already applied quote for this same ticker.
+     else if(h.quote?.symbol===item.symbol&&h.quote.timestamp>item.timestamp)reason='기존 시세보다 오래된 응답';
+     else if(item.currency==='USD'&&h.quote?.symbol===item.symbol&&h.quote.fxTimestamp>fx.timestamp)reason='기존 환율보다 오래된 응답';
+     const price=reason?null:item.price*(item.currency==='USD'?fx.rate:1);
+     if(!reason&&(!Number.isFinite(price*h.qty)||price*h.qty>Number.MAX_SAFE_INTEGER))reason='평가금액 범위 확인 필요';
+     if(reason){failed.push(h.name+' ('+reason+')');return {...h,quoteError:reason}}
+     updated++;
+     return {...h,current:Math.round(price),value:Math.round(price*h.qty),quoteError:null,
+       quote:{symbol:item.symbol,price:item.price,currency:item.currency,timestamp:item.timestamp,
+         fetchedAt:item.fetchedAt||new Date().toISOString(),fxRate:item.currency==='USD'?fx.rate:null,
+         fxTimestamp:item.currency==='USD'?fx.timestamp:null}};
+   });
+   const updatedHoldings={...holdings,[account]:next};
+   localStorage.setItem(HOLD_KEY,JSON.stringify(updatedHoldings));
+   holdings=updatedHoldings;
+   renderInvest();
+   const msg=document.getElementById('syncMsg');
+   if(msg){msg.innerHTML=`<div class="notice" style="margin-bottom:12px">${ACCOUNTS[account].name}: ${updated}개 갱신${skipped?`, 수정 중인 ${skipped}개 제외`:''}.
+     ${failed.length?`<br>${escapeAttr(failed.join(', '))}<br>조회 실패 종목은 기존 가격을 유지했습니다.`:''}
+     <br>시세는 지연될 수 있습니다. 월별 자산 기록은 ‘합계 반영’을 눌러야 바뀝니다.</div>`}
+ }catch(error){
+   const msg=document.getElementById('syncMsg');
+   if(msg){msg.textContent='시세 갱신 실패: '+(error.name==='TimeoutError'?'응답 시간이 초과되었습니다.':error.message)+' 기존 가격은 유지됩니다.'}
+ }finally{
+   quoteBusy.delete(account);
+   if(button){button.disabled=false;button.textContent='↻ 현재가'}
+ }
+}
+
 function manualSync(account){
  syncHoldingAccountToLatestMonth(account);
  renderAll();
@@ -2204,12 +1865,13 @@ function openHoldingModal(account,index){
    <option value="toss" ${account==="toss"?"selected":""}>토스증권</option>
  </select>
  <label>종목명</label><input id="hName" value="${escapeAttr(h.name)}" placeholder="예: QQQM">
+ <label>시세코드 (비우면 수동 입력)</label><input id="hTicker" value="${escapeAttr(h.ticker||'')}" placeholder="예: NVDA, 005930.KS">
  <div class="form-grid">
    <div><label>보유수량</label><input id="hQty" type="number" step="any" value="${h.qty??""}" placeholder="20"></div>
-   <div><label>평균매수가</label><input id="hAvg" type="number" step="any" value="${h.avg??""}" placeholder="397118"></div>
+   <div><label>평균매수가 (원)</label><input id="hAvg" type="number" step="any" value="${h.avg??""}" placeholder="397118"></div>
  </div>
  <div class="form-grid">
-   <div><label>현재가</label><input id="hCurrent" type="number" step="any" value="${h.current??""}" placeholder="407188"></div>
+   <div><label>현재가 (원)</label><input id="hCurrent" type="number" step="any" value="${h.current??""}" placeholder="407188"></div>
    <div><label>평가금액</label><input id="hValue" type="number" step="any" value="${h.value??""}" placeholder="8143760"></div>
  </div>
  <div class="notice" style="margin-top:12px">보유수량과 현재가를 입력하면 평가금액을 자동 계산할 수 있습니다. 현금/예수금은 수량·가격을 비우고 평가금액만 입력하면 됩니다.</div>
@@ -2228,6 +1890,7 @@ function closeModal(){modalBg.classList.add("hidden")}
 function saveHolding(originalAccount,index){
  const newAccount=document.getElementById("hAccount").value;
  const obj={
+  ticker:document.getElementById("hTicker").value.trim().toUpperCase(),
   name:document.getElementById("hName").value.trim(),
   qty:toNullableNumber(document.getElementById("hQty").value),
   avg:toNullableNumber(document.getElementById("hAvg").value),
@@ -2235,6 +1898,14 @@ function saveHolding(originalAccount,index){
   value:Number(document.getElementById("hValue").value)||0
  };
  if(!obj.name){alert("종목명을 입력해주세요.");return}
+ if(obj.ticker && !/^[A-Z0-9^][A-Z0-9.^=\-]{0,24}$/.test(obj.ticker)){alert('시세코드를 확인해주세요. 예: NVDA, 005930.KS');return}
+ if([obj.qty,obj.avg,obj.current,obj.value].some(v=>v!==null&&(!Number.isFinite(v)||v<0))){alert('수량과 금액은 0 이상의 숫자로 입력해주세요.');return}
+ obj.autoPrice=!!obj.ticker;
+ const before=index>=0?holdings[originalAccount][index]:null;
+ if(before && before.ticker===obj.ticker && before.current===obj.current && before.value===obj.value){
+   if(before.quote)obj.quote=before.quote;
+   if(before.quoteError)obj.quoteError=before.quoteError;
+ }
  if(index>=0){
    holdings[originalAccount].splice(index,1);
    holdings[newAccount]=holdings[newAccount]||[];

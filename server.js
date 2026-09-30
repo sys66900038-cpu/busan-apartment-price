@@ -1,3 +1,4 @@
+import { createQuoteService } from "./quote-service.js";
 import { installSyncRoutes } from "./sync-server.js";
 import express from "express";
 import path from "path";
@@ -42,10 +43,7 @@ let marketCache = {
 ==================================================
 */
 
-const quoteCache = new Map();
 
-const QUOTE_CACHE_MS =
-  60 * 1000;
 
 
 /*
@@ -204,233 +202,7 @@ Yahoo 현재가 조회
 ==================================================
 */
 
-async function fetchYahooQuote(symbol) {
-
-  /*
-  1분 캐시
-  */
-
-  const cached =
-    quoteCache.get(symbol);
-
-
-  if (
-    cached &&
-    Date.now() <
-      cached.expiresAt
-  ) {
-
-    return cached.data;
-
-  }
-
-
-  const url =
-    "https://query1.finance.yahoo.com/v8/finance/chart/" +
-    encodeURIComponent(symbol) +
-    "?range=1d" +
-    "&interval=1m";
-
-
-  const response =
-    await fetch(
-      url,
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0",
-
-          "Accept":
-            "application/json"
-        }
-      }
-    );
-
-
-  if (!response.ok) {
-
-    throw new Error(
-      `${symbol}: ${response.status}`
-    );
-
-  }
-
-
-  const json =
-    await response.json();
-
-
-  const result =
-    json?.chart?.result?.[0];
-
-
-  if (!result) {
-
-    throw new Error(
-      `${symbol}: 데이터 없음`
-    );
-
-  }
-
-
-  const meta =
-    result.meta || {};
-
-
-  const timestamps =
-    result.timestamp || [];
-
-
-  const closes =
-    result
-      .indicators
-      ?.quote
-      ?.[0]
-      ?.close || [];
-
-
-  /*
-  마지막 유효 가격 찾기
-  */
-
-  let lastPrice = null;
-  let lastTimestamp = null;
-
-
-  for (
-    let i =
-      closes.length - 1;
-    i >= 0;
-    i--
-  ) {
-
-    const value =
-      Number(closes[i]);
-
-
-    if (
-      Number.isFinite(value)
-    ) {
-
-      lastPrice =
-        value;
-
-      lastTimestamp =
-        timestamps[i] || null;
-
-      break;
-
-    }
-
-  }
-
-
-  /*
-  장이 닫혀 있거나
-  1분 데이터가 없으면
-  regularMarketPrice 사용
-  */
-
-  if (
-    lastPrice == null &&
-    Number.isFinite(
-      Number(
-        meta.regularMarketPrice
-      )
-    )
-  ) {
-
-    lastPrice =
-      Number(
-        meta.regularMarketPrice
-      );
-
-  }
-
-
-  if (lastPrice == null) {
-
-    throw new Error(
-      `${symbol}: 현재가 없음`
-    );
-
-  }
-
-
-  const data = {
-
-    symbol:
-
-      meta.symbol ||
-      symbol,
-
-
-    price:
-
-      lastPrice,
-
-
-    previousClose:
-
-      Number.isFinite(
-        Number(
-          meta.chartPreviousClose
-        )
-      )
-        ?
-        Number(
-          meta.chartPreviousClose
-        )
-        :
-        null,
-
-
-    currency:
-
-      meta.currency ||
-      null,
-
-
-    exchange:
-
-      meta.exchangeName ||
-      null,
-
-
-    marketState:
-
-      meta.marketState ||
-      null,
-
-
-    timestamp:
-
-      lastTimestamp ||
-      Math.floor(
-        Date.now() / 1000
-      )
-
-  };
-
-
-  quoteCache.set(
-    symbol,
-    {
-
-      expiresAt:
-        Date.now() +
-        QUOTE_CACHE_MS,
-
-      data
-
-    }
-  );
-
-
-  return data;
-
-}
-
+const fetchYahooQuote = createQuoteService();
 
 /*
 ==================================================
@@ -857,7 +629,10 @@ app.get(
             .toISOString(),
 
         rate:
-          quote.price
+          quote.price,
+        currency: quote.currency,
+        timestamp: quote.timestamp,
+        fetchedAt: quote.fetchedAt
 
       });
 
