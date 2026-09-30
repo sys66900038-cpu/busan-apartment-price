@@ -15,6 +15,18 @@ export function validateSnapshot(storage) {
       holdings[a].every(h => object(h) && typeof h.name === 'string' &&
         ['qty', 'avg', 'current', 'value'].every(k => h[k] == null || Number.isFinite(h[k]))))) throw new Error('보유종목 데이터가 올바르지 않습니다.');
   if (!object(goal) || !['year', 'amount', 'monthlyContribution'].every(k => Number.isFinite(goal[k]))) throw new Error('목표 데이터가 올바르지 않습니다.');
+  for (const account of ['pension', 'isa', 'toss']) for (const h of holdings[account]) {
+    if (h.inputCurrency != null && !['USD', 'KRW'].includes(h.inputCurrency)) throw new Error('입력 통화가 올바르지 않습니다.');
+    if (h.inputCurrency !== 'USD') continue;
+    const u=h.usd, fx=h.fx;
+    if (!object(u) || !object(fx) || !Number.isFinite(u.value) || u.value<0 ||
+        !['avg','current'].every(k=>u[k]===null || (Number.isFinite(u[k])&&u[k]>=0)) ||
+        !Number.isFinite(fx.rate) || fx.rate<=0 || !Number.isFinite(fx.timestamp) || fx.timestamp<=0 || fx.currency!=='KRW' ||
+        !Number.isFinite(h.value) || h.value!==Math.round(u.value*fx.rate) || h.value>Number.MAX_SAFE_INTEGER)
+      throw new Error('달러 금액과 원화 환산 데이터가 올바르지 않습니다.');
+    if (h.qty!=null && (!Number.isFinite(h.qty)||h.qty<0||u.current===null||Math.abs(u.value-h.qty*u.current)>1e-8*Math.max(1,u.value)))
+      throw new Error('달러 평가금액과 보유수량을 확인해주세요.');
+  }
   return storage;
 }
 function canonical(x) {

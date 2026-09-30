@@ -154,6 +154,9 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 .dashboard-details{margin-top:20px}.dashboard-details summary{font-size:14px;font-weight:800;cursor:pointer;padding:10px 0}
 .mini,.kpi,.goal-mini{min-width:0}.mini .value,.goal-mini .v{overflow-wrap:anywhere}
 @media(max-width:360px){.hero{padding:18px}.hero .total{font-size:27px}.dashboard-value{font-size:23px}.mini{padding:11px}.value{font-size:16px}}
+.holding-amount{text-align:right;flex-shrink:0;max-width:52%;overflow-wrap:anywhere}
+.holding-amount strong,.holding-amount span{display:block}.holding-amount span{margin-top:4px}
+#hCurrencyNote,#hFxStatus{line-height:1.65}input[readonly]{background:#f2f6fa;color:#445}
 </style>
 </head>
 <body>
@@ -330,6 +333,13 @@ label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px}
 
 <section id="invest" class="wrap hidden">
   <div class="section" style="margin-top:0">투자현황</div>
+  <div class="card" style="margin-bottom:12px">
+    <b>달러 자산 · 원화 환산</b>
+    <p class="muted" id="usdFxStatus" role="status" style="line-height:1.6">달러 입력 시 최신 환율을 조회합니다.</p>
+    <button class="btn gray small" onclick="refreshUsdValuations(this)">환율 새로고침</button>
+    <button id="usdRecoveryButton" class="btn gray small" hidden onclick="exportUsdMigrationBackup()">최초 통화 변경 전 백업</button>
+    <p class="muted" style="line-height:1.6">미국 주식은 종목 수정에서 USD를 선택하세요. 달러 금액과 원화 환산액을 함께 표시하며, 홈·계좌 합계는 원화 기준입니다. 환율 갱신은 보유종목 평가액에 적용되고 월별 기록은 합계 반영·월말 기록 시 변경됩니다.</p>
+  </div>
   <div class="card" id="investSummary"></div>
   <div class="notice" id="performanceNote" style="margin:12px 0">
     자산 증가율은 추가 납입금까지 포함한 총자산의 변화이고, 투자손익률은 투자계좌의 현재 평가손익 ÷ 현재 투자원금으로 계산합니다.
