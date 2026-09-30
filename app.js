@@ -2178,18 +2178,27 @@ function renderMonthly(force=false){
  const previousKey=monthlyPrevious(currentInputKey),previous=data[previousKey];
  const saved=data[currentInputKey];
  monthlyBase=structuredClone(previous||{});monthlyBaseline=JSON.stringify(data);monthlyDirty=false;
- updateTitle.textContent=labelFromKey(currentInputKey)+' 기록';updateButton.textContent='이 달 기록 저장';
+ updateTitle.textContent=labelFromKey(currentInputKey)+' 기록';updateButton.textContent=labelFromKey(currentInputKey)+' 기록 저장';
  const options=[...new Set([...Object.keys(data),today,currentInputKey,monthAfter(latestKey())])].sort().reverse();
  monthlyForm.innerHTML='<label for="recordMonth">기록할 월</label><select id="recordMonth" onchange="selectRecordMonth(this.value)">'+options.map(k=>'<option value="'+k+'" '+(k===currentInputKey?'selected':'')+'>'+labelFromKey(k)+(data[k]?' · 저장됨':' · 새 기록')+'</option>').join('')+'</select><div class="notice">이번 달 입금은 +, 출금은 −로 입력하세요. 누적 납입액은 자동 계산됩니다. 모든 금액은 원화입니다.</div>'+Object.entries(ACCOUNTS).map(([k,a])=>{
  const base=previous?.[k]?.invest??0,invest=saved?.[k]?.invest??base,value=saved?.[k]?.value??previous?.[k]?.value??0;
- return '<div class="card"><b>'+a.name+'</b><div class="muted">'+(previousKey?labelFromKey(previousKey):'이전 기록 없음')+' 누적 납입 '+money(base)+'</div><label for="'+k+'_delta">이번 달 순입금액 (원)</label><input id="'+k+'_delta" type="number" step="any" value="'+(invest-base)+'" oninput="monthlyDeltaChanged(&quot;'+k+'&quot;)"><div id="'+k+'_principal" class="notice">누적 납입액 '+money(invest)+'</div><details><summary>누적 납입액 직접 수정</summary><label for="'+k+'_invest">누적 납입액 (원)</label><input id="'+k+'_invest" type="number" min="0" step="any" value="'+invest+'" oninput="monthlyPrincipalChanged(&quot;'+k+'&quot;)"></details><label for="'+k+'_value">월말 평가금액 / 잔액 (원)</label><input id="'+k+'_value" type="number" min="0" step="any" value="'+value+'" oninput="monthlyDirty=true">'+(k!=='savings'?'<button class="btn gray small" onclick="fillMonthlyHolding(&quot;'+k+'&quot;)">현재 보유종목 합계 가져오기</button>':'')+'</div>';
+ return '<div class="card"><b>'+a.name+'</b><div class="muted">'+(previousKey?labelFromKey(previousKey):'이전 기록 없음')+' 누적 납입 '+money(base)+'</div><label for="'+k+'_delta">이번 달 순입금액 (원)</label><input id="'+k+'_delta" type="number" step="any" value="'+(invest-base)+'" oninput="monthlyDeltaChanged(&quot;'+k+'&quot;)"><div id="'+k+'_principal" class="notice">누적 납입액 '+money(invest)+'</div><details><summary>누적 납입액 직접 수정</summary><label for="'+k+'_invest">누적 납입액 (원)</label><input id="'+k+'_invest" type="number" min="0" step="any" value="'+invest+'" oninput="monthlyPrincipalChanged(&quot;'+k+'&quot;)"></details><label for="'+k+'_value">월말 평가금액 / 잔액 (원)</label><input id="'+k+'_value" type="number" min="0" step="any" value="'+value+'" oninput="monthlyDirty=true;updateMonthlyReview()">'+(k!=='savings'?'<button class="btn gray small" onclick="fillMonthlyHolding(&quot;'+k+'&quot;)">현재 보유종목 합계 가져오기</button>':'')+'</div>';
  }).join('');
+ updateMonthlyReview();
  document.getElementById('history').innerHTML=keys().slice().reverse().map(k=>'<div class="row" style="padding:12px 0;border-bottom:1px solid #edf0f4"><b>'+labelFromKey(k)+'</b><span>'+money(total(data[k]))+'</span><button class="btn gray small" onclick="selectRecordMonth(&quot;'+k+'&quot;)">수정</button></div>').join('');
+}
+function updateMonthlyReview(){
+ const node=document.getElementById('monthlyReview');if(!node)return;
+ const rows=Object.entries(ACCOUNTS).map(([k,a])=>{const raw=document.getElementById(k+'_value')?.value;return {name:a.name,value:raw===''?null:Number(raw)};});
+ const valid=rows.every(r=>r.value!==null&&Number.isFinite(r.value)&&r.value>=0);
+ node.innerHTML='<b>'+labelFromKey(currentInputKey)+' 저장할 평가금액</b>'+rows.map(r=>'<div class="row" style="margin-top:8px"><span>'+r.name+'</span><span>'+(r.value===null||!Number.isFinite(r.value)?'입력 필요':money(r.value))+'</span></div>').join('')+'<div class="row" style="margin-top:12px;border-top:1px solid #ddd;padding-top:12px"><b>총자산</b><b>'+(valid?money(rows.reduce((sum,r)=>sum+r.value,0)):'입력값 확인')+'</b></div><p class="muted">선택한 월만 수정됩니다. 다른 월의 기록은 그대로 유지됩니다.</p>';
 }
 function selectRecordMonth(k){
  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(k))return;
  if(monthlyDirty&&!confirm('저장하지 않은 입력을 버리고 다른 월을 열까요?')){document.getElementById('recordMonth').value=currentInputKey;return;}
  currentInputKey=k;monthlyDirty=false;saveMsg.innerHTML='';renderMonthly(true);
+ document.getElementById('recordMonth').focus({preventScroll:true});
+ window.scrollTo({top:0,behavior:'smooth'});
 }
 function monthlyDeltaChanged(k){
  monthlyDirty=true;const raw=document.getElementById(k+'_delta').value;
@@ -2205,7 +2214,7 @@ function monthlyPrincipalChanged(k){
 function fillMonthlyHolding(k){
  if(!['pension','isa','toss'].includes(k))return;
  if(!confirm('현재 저장된 보유종목 합계 '+money(holdingValueTotal(k))+'를 '+labelFromKey(currentInputKey)+' 평가금액에 넣을까요? 과거 시세를 조회하는 기능은 아닙니다.'))return;
- document.getElementById(k+'_value').value=holdingValueTotal(k);monthlyDirty=true;
+ document.getElementById(k+'_value').value=holdingValueTotal(k);monthlyDirty=true;updateMonthlyReview();
 }
 function saveNextMonth(){
  if(JSON.stringify(data)!==monthlyBaseline){alert('다른 작업으로 월 기록이 변경되었습니다. 입력을 메모한 후 다시 불러와 주세요.');return;}
@@ -2218,6 +2227,7 @@ function saveNextMonth(){
  const next={...data,[currentInputKey]:obj};
  try{localStorage.setItem(MONTH_KEY,JSON.stringify(next));}catch{alert('기록을 저장하지 못했습니다. 입력값은 유지됩니다.');return;}
  data=next;monthlyDirty=false;renderAll();saveMsg.textContent=labelFromKey(currentInputKey)+' 기록을 저장했습니다. 입력한 평가금액을 그대로 반영했습니다.';
+ saveMsg.setAttribute('role','status');saveMsg.scrollIntoView?.({behavior:'smooth',block:'center'});
 }
 function clearNextMonthForm(){
  if(monthlyDirty&&!confirm('입력 중인 변경을 취소하고 저장된 값으로 되돌릴까요?'))return;
